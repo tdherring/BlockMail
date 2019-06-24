@@ -1,4 +1,6 @@
 const SHA256 = require("crypto-js/sha256");
+const EC = require("elliptic").ec;
+const EC_INSTANCE = new EC("secp256k1");
 
 //Block may have multiple Mail objects (Transactions).
 class Mail {
@@ -7,6 +9,34 @@ class Mail {
         this.to_addr = to_addr;
         this.data = data;
     }
+
+    //Generate the hash of the mail using SHA256.
+    hashify() {
+        return SHA256(this.from_addr + this.to_addr + JSON.stringify(this.data)).toString();
+    }
+
+    //Set the signature of the Mail.
+    sign(key) {
+        //If hash not correct, then do not authenticate and throw error.
+        if (key.getPublic("hex") !== this.from_addr) {
+            throw new Error("You do not own this Address.");
+        }
+        let hash = this.hashify();
+        let signature = key.sign(hash, "base64");
+        this.signature = signature.toDER("hex");
+    }
+
+    //Check the mail has been signed correctly.
+    validate() {
+        if (!this.signature || this.signature.length === 0) {
+            throw new Error("This Mail has not been signed.");
+        }
+        let public_key = EC_INSTANCE.keyFromPublic(this.from_addr, "hex");
+        return public_key.verify(this.hashify(), this.signature);
+    }
+
+    //Encrypts the data of the mail (body, optional from, etc) which would otherwise be viewable by anyone with the wallet address.
+     
 }
 
 //Blocks comprise the Blockchain.
@@ -26,10 +56,22 @@ class Block {
 
     //Mine a block of given difficulty.
     mine(difficulty) {
-        while(this.hash.substring(0, difficulty) != Array(difficulty + 1).join("0")) {
+        while(this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
             this.nonce++;
             this.hash = this.hashify();
         }
+    }
+
+    //Check that all mail in block is valid.
+    validateAllMail() {
+        //Iterate through each object of mail array, and call validate() on it.
+        for (var mail of this.mail) {
+            if (mail.validate() === false) {
+                return false
+            }
+        }
+        //Based on checks above, all mail in block must be valid.
+        return true;
     }
 }
 
@@ -60,10 +102,18 @@ class Blockchain {
         this.pending_mail = [];
     }
 
-    createMail(mail) {
+    //Add Mail object to end of queue (send).
+    addMail(mail) {
+        if (!mail.from_addr || !mail.to_addr) {
+            throw new Error("No From or To address given.");
+        }
+        if (mail.validate() === false) {
+            throw new Error("Mail signature invalid. Cannot add to pending mail queue.");
+        }
         this.pending_mail.push(mail);
     }
     
+    //Return all mail associated with address.
     getMailForAddress(addr) {
         let mail_for_addr = [];
         for (var block of this.chain) {
@@ -81,12 +131,10 @@ class Blockchain {
         for (let i = 1; i < this.chain.length; i++) {
             var current_block = this.chain[i];
             var previous_block = this.chain[i - 1];
-            //If hash has changed, then Blockchain integrity disrupted.
-            if (current_block.hash !== current_block.hashify()) {
-                return false;
-            }
+            //If mail in current block not valid, integrity disrupted -OR-
+            //If hash has changed, then Blockchain integrity disrupted -OR-
             //If the previous_hash value in current block not equal to the previous blocks hash, integrity disrupted.
-            if (current_block.previous_hash !== previous_block.hash) {
+            if (current_block.validateAllMail() === false || current_block.hash !== current_block.hashify() || current_block.previous_hash !== previous_block.hash) {
                 return false;
             }
         }
@@ -95,5 +143,5 @@ class Blockchain {
     }
 }
 
-module.export.Blockchain = Blockchain;
-module.export.Mail = Mail;
+module.exports.Blockchain = Blockchain;
+module.exports.Mail = Mail;
