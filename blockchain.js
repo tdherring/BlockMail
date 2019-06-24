@@ -126,6 +126,17 @@ class Blockchain {
         return mail_for_addr;
     }
 
+    getPublicKeyForAddress(addr) {
+        for (var block of this.chain) {
+            for (var mail of block.mail) {
+                if (mail.from_addr == addr) {
+                    return mail.data;
+                }
+            }
+        }
+        return null;
+    }
+
     //Check that Blockchain integrity still good.
     validate() {
         for (let i = 1; i < this.chain.length; i++) {
