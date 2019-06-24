@@ -95,7 +95,7 @@ class Blockchain {
     
     //Mine all mail in queue.
     minePendingMail() {
-        let block = new Block(Date.now(), this.pending_mail);
+        let block = new Block(Date.now(), this.pending_mail, this.chain[this.chain.length-1].hashify());
         block.mine(this.difficulty);
         console.log("Block Mined: " + block.hash);
         this.chain.push(block);
@@ -145,7 +145,7 @@ class Blockchain {
             //If mail in current block not valid, integrity disrupted -OR-
             //If hash has changed, then Blockchain integrity disrupted -OR-
             //If the previous_hash value in current block not equal to the previous blocks hash, integrity disrupted.
-            if (current_block.validateAllMail() === false || current_block.hash !== current_block.hashify() || current_block.previous_hash !== previous_block.hash) {
+            if (current_block.validateAllMail() === false || current_block.hash !== current_block.hashify() || current_block.previous_hash !== previous_block.hashify()) {
                 return false;
             }
         }
