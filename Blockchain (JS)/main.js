@@ -70,4 +70,5 @@ blockchain.minePendingMail();
 // console.log("\nMail for Address 3 - " + address_3.getECDSAPublicKey() + ":\n" + JSON.stringify(blockchain.getMailForAddress(address_3.getECDSAPublicKey()), null, 4)); 
 
 console.log("\nEncrypted mail for Address 2: " + blockchain.getMailForAddress(address_2.getECDSAPublicKey())[1].data);
-console.log("\nDecrypting mail for Address 2: " + address_2.rsa_key_pair.decrypt(blockchain.getMailForAddress(address_2.getECDSAPublicKey())[1].data));
+console.log("Decrypting mail for Address 2: " + address_2.rsa_key_pair.decrypt(blockchain.getMailForAddress(address_2.getECDSAPublicKey())[1].data));
+console.log("Chain valid?: " + blockchain.validate());
