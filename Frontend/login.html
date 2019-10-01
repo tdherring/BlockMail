@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>BlockMail</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="keywords" content="" />
+    <meta name="description" content="A blockchain based email system, with a focus on security through transparency of design." />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400,600,700,900|Quicksand:400,700|Questrial" rel="stylesheet" />
+    <link href="css/default.css" rel="stylesheet" type="text/css" media="all" />
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+
+<body>
+    <!-- Bootstrap Script Import -->
+    <script src="js/jquery-3.4.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <!-- End Bootstrap Script Import -->
+    <!-- My JavaScript Import -->
+    <script src="js/authenticate.js"></script>
+    <!-- End My JavaScript Import -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav">
+                <a class="nav-item nav-link" href="index.html">Home</a>
+                <a class="nav-item nav-link active" href="login.html">Login</a>
+                <a class="nav-item nav-link" href="about-us.html">About Us</a>
+                <a class="nav-item nav-link" href="become-a-node.html">Become a Node</a>
+                <a class="nav-item nav-link" href="mail.html">Mail</a>
+                <a class="nav-item nav-link" href="contact-us.html">Contact Us</a>
+            </div>
+        </div>
+    </nav>
+    <div class="wrapper">
+        <div class="row">
+            <div class="col-sm-12 col-md-12 col-lg-8 mx-auto">
+                <div class="card card-signin my-5">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Sign In</h5>
+                        <form class="form-signin" id="login-box">
+                            <div class="form-label-group">
+                                <textarea cols="40" rows="9" id="ecdsa_public" class="form-control" placeholder="ECDSA Public Key" autofocus></textarea>
+                            </div>
+                            <h5 class="text-center">- Or -</h5>
+                            <div class="form-label-group">
+                                <label id="ecdsa_public_file_label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa_public_file">Select ECDSA Public Key File</label>
+                                <input type="file" id="ecdsa_public_file" class="hidden" accept=".key"></input>
+                            </div>
+
+                            <div class="form-label-group">
+                                <textarea cols="40" rows="9" id="ecdsa_private" class="form-control" placeholder="ECDSA Private Key"></textarea>
+                            </div>
+                            <h5 class="text-center">- Or -</h5>
+                            <div class="form-label-group">
+                                <label id="ecdsa_private_file_label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa_private_file">Select ECDSA Private Key File</label>
+                                <input type="file" id="ecdsa_private_file" class="hidden" accept=".key"></input>
+                            </div>
+                        </form>
+                        <button class="btn btn-lg btn-primary btn-block text-uppercase" onclick="authenticate();">Authenticate</button>
+                        <div id="login-box-warning"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="page-footer font-small pt-4">
+        <div class="container-fluid text-center text-md-left">
+            <div class="row">
+                <div class="col-md-6 mt-md-0 mt-3">
+                    <h5 class="text-uppercase font-weight-bold">Purpose</h5>
+                    <p>BlockMail is a dissertation project developed by Tom Herring at Queen Mary University London in 2019. It serves as a proof of concept that Blockchain technology can be used as an email system for extremely secure, traceable
+                        communications.</p>
+                </div>
+                <hr class="clearfix w-100 d-md-none pb-3" />
+                <div class="col-md-6 mb-md-0 mb-3">
+                    <h5 class="text-uppercase font-weight-bold">More Information</h5>
+                    <p>
+                        If you would like to learn more about Blockchain technology, please go to <a href="https://www.investopedia.com/terms/b/blockchain.asp">Investopedia </a>. This gives a good
+                        outline of the technology and its potential uses (both now and in the future). For any questions, please email <a href="mailto:t.d.herring@se17.qmul.ac.uk"> t.d.herring@se17.qmul.ac.uk</a>.
+                    </p>
+                </div>
+            </div>
+            <hr class="clearfix" />
+        </div>
+        <div class="footer-copyright text-center py-3">© BlockMail 2019</div>
+    </footer>
+</body>
+
+</html>
