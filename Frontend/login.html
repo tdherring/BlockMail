@@ -14,13 +14,13 @@
 </head>
 
 <body>
+
     <!-- Bootstrap Script Import -->
     <script src="js/jquery-3.4.1.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
-    <!-- End Bootstrap Script Import -->
     <!-- My JavaScript Import -->
     <script src="js/authenticate.js"></script>
-    <!-- End My JavaScript Import -->
+
     <nav class="navbar navbar-expand-lg navbar-light">
         <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
 
@@ -46,21 +46,24 @@
                         <h5 class="card-title text-center">Sign In</h5>
                         <form class="form-signin" id="login-box">
                             <div class="form-label-group">
-                                <textarea cols="40" rows="9" id="ecdsa_public" class="form-control" placeholder="ECDSA Public Key" autofocus></textarea>
+                                <textarea cols="40" rows="9" id="ecdsa-public" class="form-control" placeholder="ECDSA Public Key" autofocus></textarea>
                             </div>
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
-                                <label id="ecdsa_public_file_label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa_public_file">Select ECDSA Public Key File</label>
-                                <input type="file" id="ecdsa_public_file" class="hidden" accept=".key"></input>
+                                <label id="ecdsa-public-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-public-file">Select ECDSA Public Key File</label>
+                                <input type="file" id="ecdsa-public-file" class="hidden" accept=".key"></input>
+                                <label id="clear-public-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-public">Clear</label>
+                                <input id="clear-public" type="button" class="hidden" onclick="clearFile(true)"></input>
                             </div>
-
                             <div class="form-label-group">
-                                <textarea cols="40" rows="9" id="ecdsa_private" class="form-control" placeholder="ECDSA Private Key"></textarea>
+                                <textarea cols="40" rows="9" id="ecdsa-private" class="form-control" placeholder="ECDSA Private Key"></textarea>
                             </div>
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
-                                <label id="ecdsa_private_file_label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa_private_file">Select ECDSA Private Key File</label>
-                                <input type="file" id="ecdsa_private_file" class="hidden" accept=".key"></input>
+                                <label id="ecdsa-private-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-private-file">Select ECDSA Private Key File</label>
+                                <input type="file" id="ecdsa-private-file" class="hidden" accept=".key"></input>
+                                <label id="clear-private-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-private">Clear</label>
+                                <input id="clear-private" type="button" class="hidden" onclick="clearFile(false)"></input>
                             </div>
                         </form>
                         <button class="btn btn-lg btn-primary btn-block text-uppercase" onclick="authenticate();">Authenticate</button>
@@ -70,6 +73,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Handles Uploading Keys-->
+    <script src="js/upload_keys.js"></script>
+
     <footer class="page-footer font-small pt-4">
         <div class="container-fluid text-center text-md-left">
             <div class="row">

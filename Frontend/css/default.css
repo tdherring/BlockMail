@@ -118,3 +118,8 @@ h5 {
 .alert {
     margin-top: 1vh;
 }
+
+#clear-public-label, 
+#clear-private-label {
+    display: none;
+}
