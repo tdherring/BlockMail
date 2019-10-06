@@ -7,9 +7,8 @@ document.getElementById("ecdsa-public-file").onchange = function () {
     reader.onerror = error => reject(error);
     reader.readAsText(document.getElementById("ecdsa-public-file").files[0]);
 
-    document.getElementById("ecdsa-public-file").disabled = true;
     document.getElementById("ecdsa-public-file-label").setAttribute("style", "display: none;");
-    document.getElementById("clear-public-label").setAttribute("style", "display: inline;");
+    document.getElementById("clear-public-label").setAttribute("style", "display: block;");
 
 };
 
@@ -22,7 +21,6 @@ document.getElementById("ecdsa-private-file").onchange = function () {
     reader.onerror = error => reject(error);
     reader.readAsText(document.getElementById("ecdsa-private-file").files[0]);
 
-    document.getElementById("ecdsa-private-file").disabled = true;
     document.getElementById("ecdsa-private-file-label").setAttribute("style", "display: none;");
     document.getElementById("clear-private-label").setAttribute("style", "display: block;");
 };
