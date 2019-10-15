@@ -6,13 +6,13 @@ import json
 import asyncio
 import websockets
 
-LISTENING_PORT = 41284  # Transaction listening port. DO NOT CHANGE.
+DEFAULT_DISCOVERY_PORT = 41284  # Transaction listening port. DO NOT CHANGE.
 
 # Logic for listening for incoming connections (containing transactions).
 
 
 class Server:
-    def __init__(self, host="127.0.0.1", port=LISTENING_PORT):
+    def __init__(self, host="127.0.0.1", port=DEFAULT_DISCOVERY_PORT):
         print(f"Listing on ws://{host}:{port}")
         start_server = websockets.serve(self.establishSocket, host, port)
         asyncio.get_event_loop().run_until_complete(start_server)
@@ -36,13 +36,13 @@ class Server:
     #         print("Listening on port " + str(port) + "...")
     #         s.listen()
     #         for x in range(len(MASTER_NODES)):
-        connection, address = s.accept()
+        #connection, address = s.accept()
     #         try:
     #             with connection:
     #                 while True:
     #                     data = connection.recv(1024)
     #                     if data:
-    #                         print("Peer connected - " +
+    #                         print("\nPeer connected - " +
     #                               str(address[0]) + ":" + str(address[1]))
     #                         # Instantiate Broadcast class to broadcast transaction to entire network.
     #                         broadcast = Broadcast(data)

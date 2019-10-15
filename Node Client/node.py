@@ -65,7 +65,7 @@ class Server:
 break
                     print(f"Connection to {str(address[0])}:{str(address[1])} closed.")()
                             else:
-                                print("Peer connected - " + str(address[0]) + ":" + str(address[1]))
+                                print("\nPeer connected - " + str(address[0]) + ":" + str(address[1]))
                                 self.updateKnownNodes(data_dict)
                         connection.sendall(data)
             except ConnectionAbortedError:
