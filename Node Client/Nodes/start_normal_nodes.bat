@@ -1,4 +1,4 @@
-start PowerShell -NoExit -Command "python normal_node.py" & timeout /t 1 &
+start PowerShell -NoExit -Command "python normal_node_1.py" & timeout /t 1 &
 start PowerShell -NoExit -Command "python normal_node_2.py" & timeout /t 1 &
 start PowerShell -NoExit -Command "python normal_node_3.py" & timeout /t 1 &
 start PowerShell -NoExit -Command "python normal_node_4.py" & timeout /t 1 &
