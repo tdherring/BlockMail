@@ -63,7 +63,11 @@ class Server:
 
 
 break
+<<<<<<< Updated upstream
                     print(f"Connection to {str(address[0])}:{str(address[1])} closed.")()
+=======
+                    ()
+>>>>>>> Stashed changes
                             else:
                                 print("\nPeer connected - " + str(address[0]) + ":" + str(address[1]))
                                 self.updateKnownNodes(data_dict)

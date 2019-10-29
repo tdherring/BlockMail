@@ -2,8 +2,12 @@ import socket
 import threading
 import time
 import json
-
 import asyncio
+import websockets
+
+import json
+import asyncio
+import websockets
 import websockets
 
 DEFAULT_DISCOVERY_PORT = 41284  # Transaction listening port. DO NOT CHANGE.
