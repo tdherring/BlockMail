@@ -11,25 +11,16 @@ DEFAULT_DISCOVERY_PORT = 41285  # Blockchain listening port. DO NOT CHANGE.
 MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4"]
 NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign "known nodes".
 KNOWN_NODES = []
-SERVER_IP = "127.0.0.8"
-
-# Logic for listening for incoming connections (containing blockchain information).
-
-
-class NodeServer:
+SERVER_IP = "127.0.0.8"class NodeServer:
     """Controls communication between nodes on the BlockMail network along with NodeNodeClient.
     Discovers neighbouring nodes.\n
     Takes two arguments:
         host - IP to host server on.
         port - Port to host server on. """
 
-
-class Server:
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
         self.__host = host
         self.__port = port
-        self.__known_nodes = []
-        self.__number_known_by = 0
         self.__json_data = ""
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
@@ -95,17 +86,6 @@ class Server:
         except ValueError:
             return False  # If ValueError - not JSON.
         return json_data
-
-    def discoverNodes(self):
-        if len(self.__known_nodes) < 8:  # Should I be discovering more nodes? (Less than 8 known).
-            return True
-        return False
-
-    def addKnownNode(self, node):
-        if node not in self.__known_nodes:  # Is node not already known?
-            self.__known_nodes.append(node)
-            print(f"Node Discovered! Known Nodes: {self.__known_nodes} ({self.__number_known_by + 1})")
-            self.__number_known_by += 1  # Increment nodes known by 1.
 
     def getJson(self):
         return self.__json_data

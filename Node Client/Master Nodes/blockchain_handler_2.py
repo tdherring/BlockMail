@@ -8,19 +8,10 @@ import random
 
 VERSION = "1.0"
 DEFAULT_DISCOVERY_PORT = 41285  # Blockchain listening port. DO NOT CHANGE.
-<< << << < Updated upstream
-MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4", "127.0.0.5", "127.0.0.6", "127.0.0.7", "127.0.0.8"]
-== == == =
 MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4"]
 NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign "known nodes".
 KNOWN_NODES = []
->>>>>> > Stashed changes
 SERVER_IP = "127.0.0.2"
-
-# Logic for listening for incoming connections (containing blockchain information).
-
-<< << << < Updated upstream
-== == == =
 
 
 class NodeServer:
@@ -30,16 +21,9 @@ class NodeServer:
         host - IP to host server on.
         port - Port to host server on. """
 
-
->>>>>> > Stashed changes
-
-
-class Server:
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
         self.__host = host
         self.__port = port
-        self.__known_nodes = []
-        self.__number_known_by = 0
         self.__json_data = ""
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
@@ -55,13 +39,7 @@ class Server:
                 else:
                     print(e)
             s.listen()
-
-
-<< << << < Updated upstream
-            print(f"\nListening on {self.__host}:{self.__port}...")
-== == == =
             print(f"\n[Node Discovery] Listening on {self.__host}:{self.__port}...")
->>>>>> > Stashed changes
             self.acceptConnection(s)  # Accept connections.
 
     def acceptConnection(self, s):
@@ -72,20 +50,6 @@ class Server:
                 if data:
                     print(f"\nPeer connected - {str(address[0])}:{str(address[1])}")
                     self.__json_data = self.isJson(data)
-<<<<<<< Updated upstream
-                    if self.__json_data:  # Is data in correct format?
-                        if self.discoverNodes():  # Should I be looking for more nodes? (Less than 8 known).
-                            self.addKnownNode(f"{self.__json_data['origin_host']}")  # Add node to known nodes.
-                        else:  # Or should I hop to another node? (8 or more known).
-                            hop = Hop(self.__json_data, self.__known_nodes)
-                            break
-                    else:
-                        print("Not a JSON!")
-                break
-            print(f"Connection to {str(address[0])}:{str(address[1])} closed.")
-            self.acceptConnection(s)
-
-=======
                     if self.__json_data:  # Is data in correct format?  # Is data in correct format?
                         print(f"\n{self.__json_data['origin_host']}:{str(address[1])} - Peer Connected.")
                         if SERVER_IP in MASTER_NODES:
@@ -119,24 +83,12 @@ class Server:
             print(f"\nNew Node Joined the Network: {self.__json_data['origin_host']}")
             NodeClient(host=self.__json_data["origin_host"])
 
->>>>>>> Stashed changes
     def isJson(self, string):
         try:
             json_data = json.loads(string)  # Try to parse JSON.
         except ValueError:
             return False  # If ValueError - not JSON.
         return json_data
-
-    def discoverNodes(self):
-        if len(self.__known_nodes) < 8:  # Should I be discovering more nodes? (Less than 8 known).
-            return True
-        return False
-
-    def addKnownNode(self, node):
-        if node not in self.__known_nodes:  # Is node not already known?
-            self.__known_nodes.append(node)
-            print(f"Node Discovered! Known Nodes: {self.__known_nodes} ({self.__number_known_by + 1})")
-            self.__number_known_by += 1  # Increment nodes known by 1.
 
     def getJson(self):
         return self.__json_data

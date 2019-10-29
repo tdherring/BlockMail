@@ -25,7 +25,6 @@ class NodeServer:
         self.__host = host
         self.__port = port
         self.__json_data = ""
-        self.__number_known_by = 0
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
 
@@ -49,6 +48,7 @@ class NodeServer:
             while True:
                 data = connection.recv(1024)  # Maximum data stream size of 1024 bytes.
                 if data:
+                    print(f"\nPeer connected - {str(address[0])}:{str(address[1])}")
                     self.__json_data = self.isJson(data)
                     if self.__json_data:  # Is data in correct format?  # Is data in correct format?
                         print(f"\n{self.__json_data['origin_host']}:{str(address[1])} - Peer Connected.")
@@ -90,6 +90,11 @@ class NodeServer:
             return False  # If ValueError - not JSON.
         return json_data
 
+    def getJson(self):
+        return self.__json_data
+
+# Logic for connecting to other nodes on the BlockMail network.
+
 
 class NodeClient:
     """Controls communication between nodes on the BlockMail network along with NodeServer.
@@ -97,9 +102,11 @@ class NodeClient:
         host - IP of node to connect to.
         port - Port of node to connect to."""
 
-    def __init__(self, host, port=DEFAULT_DISCOVERY_PORT):
+    def __init__(self, host, port=DEFAULT_DISCOVERY_PORT, hop=False, server_json=""):
         self.__host = host
         self.__port = port
+        self.__hop = hop
+        self.__server_json = server_json
 
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.

@@ -13,8 +13,6 @@ NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign 
 KNOWN_NODES = []
 SERVER_IP = "127.0.0.1"
 
-# Logic for listening for incoming connections (containing blockchain information).
-
 
 class NodeServer:
     """Controls communication between nodes on the BlockMail network along with NodeNodeClient.
@@ -23,13 +21,9 @@ class NodeServer:
         host - IP to host server on.
         port - Port to host server on. """
 
-
-class Server:
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
         self.__host = host
         self.__port = port
-        self.__known_nodes = []
-        self.__number_known_by = 0
         self.__json_data = ""
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
@@ -96,17 +90,6 @@ class Server:
             return False  # If ValueError - not JSON.
         return json_data
 
-    def discoverNodes(self):
-        if len(self.__known_nodes) < 8:  # Should I be discovering more nodes? (Less than 8 known).
-            return True
-        return False
-
-    def addKnownNode(self, node):
-        if node not in self.__known_nodes:  # Is node not already known?
-            self.__known_nodes.append(node)
-            print(f"Node Discovered! Known Nodes: {self.__known_nodes} ({self.__number_known_by + 1})")
-            self.__number_known_by += 1  # Increment nodes known by 1.
-
     def getJson(self):
         return self.__json_data
 
@@ -151,7 +134,7 @@ class MailServer:
         port - Port of node to connect to."""
 
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
-        print(f"\n[Mail Server Listening] on ws://{host}:{port}...")
+        print(f"\n[Mail Server] Listening on ws://{host}:{port}...")
         start_server = websockets.serve(self.establishSocket, host, port)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
@@ -165,7 +148,7 @@ class MailServer:
 
 if __name__ == "__main__":
     NODES_ON_NETWORK.extend(MASTER_NODES)  # Add all master nodes to NODES_ON_NETWORK to save processing later.
-    MailServer()  # Start MailServer.
+    # MailServer()  # Start MailServer.
     if SERVER_IP in MASTER_NODES:
         print(f"*** STARTING MASTER NODE: {SERVER_IP} ***\n")
     else:
