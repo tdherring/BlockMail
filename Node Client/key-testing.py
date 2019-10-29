@@ -20,7 +20,7 @@ class Mail:
             raise Exception("You do not own this Address.")
         hash = self.hashify()
         self.signature = key.sign(hash).hex()
-        signature.to_der("hex")  # LOOK INTO
+        self.signature.to_der("hex")  # LOOK INTO
 
 
 class Address:
