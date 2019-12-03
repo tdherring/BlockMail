@@ -1,4 +1,4 @@
-const MASTER_NODES = ["localhost:41284"];
+const MASTER_NODES = ["localhost:41286"];
 
 function establishConnection() {
     for (var x = 0; x < MASTER_NODES.length; x++) {
@@ -7,7 +7,7 @@ function establishConnection() {
 }
 
 function createSocket(address) {
-    var socket = new WebSocket("ws://" + address);
+    var socket = new WebSocket("ws://" + address, ["mail"]);
     socket.onopen = function() {
         console.log(getCookie("ecdsa_public"));
         socket.send(getCookie("ecdsa_public"));

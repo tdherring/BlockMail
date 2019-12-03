@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 import asyncio
-import websockets
+import websocket
 import time
 import random
 
@@ -135,17 +135,19 @@ class MailServer:
         port - Port of node to connect to."""
 
     def __init__(self, host=SERVER_IP, port=DEFAULT_MAIL_PORT):
-        start_server = websockets.serve(self.establishSocket, host, port)
-        asyncio.get_event_loop().run_until_complete(start_server)
-        asyncio.get_event_loop().run_forever()
+        self.__host = host
+        self.__port = port
+        self.establishSocket()
 
-    async def establishSocket(self, host, port):
-        print(f"\n[Mail Server] Listening on ws://{host}:{port}...")
-        uri = f"ws://{host}:{port}"
-        async with websockets.connect(uri) as websocket:
-            address = await websocket.recv()
-            print(f"{address} requested mail...")
-            await websocket.send("hello")
+    def establishSocket(self):
+        print(f"\n[Mail Server] Listening on ws://{self.__host}:{self.__port}...")
+        uri = f"ws://{self.__host}:{self.__port}"
+        self.__ws = websocket.WebSocketApp(uri, on_open=self.connectionReceived)
+        self.__ws.run_forever()
+
+    def connectionReceived(self):
+        print(f"Requested mail...")
+        self.__ws.send("hello")
 
 
 if __name__ == "__main__":

@@ -1,125 +1,129 @@
 /* GLOBAL */
 
 .hidden {
-    display: none;
+	display: none;
 }
-
 
 /* MENU */
 
 #logo {
-    margin-left: 7vw;
+	margin-left: 7vw;
 }
 
 @media only screen and (max-width: 1220px) {
-    #logo {
-        width: 175px !important;
-    }
+	#logo {
+		width: 175px !important;
+	}
 }
 
 @media only screen and (min-width: 992px) {
-    #logo {
-        width: 250px;
-    }
+	#logo {
+		width: 250px;
+	}
 }
 
 .navbar {
-    background-color: #f79714;
+	background-color: #f79714;
 }
 
 .active {
-    font-weight: bold;
+	font-weight: bold;
 }
 
 .navbar-nav {
-    margin-right: 7vw;
-    text-align: right;
+	margin-right: 7vw;
+	text-align: right;
 }
 
 .navbar-toggler {
-    margin-right: 7vw;
-    margin-top: 1vh;
+	margin-right: 7vw;
+	margin-top: 1vh;
 }
 
 @media only screen and (min-width: 992px) {
-    .navbar-nav {
-        padding-top: 1.5em;
-        right: 0;
-        position: absolute;
-    }
-    .nav-item {
-        margin: 0 1em 0 1em;
-    }
-}
+	.navbar-nav {
+		padding-top: 1.5em;
+		right: 0;
+		position: absolute;
+	}
 
+	.nav-item {
+		margin: 0 1em 0 1em;
+	}
+}
 
 /* BODY */
 
+body {
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
 .wrapper {
-    text-align: center;
-    height: 100%;
-    width: 100%;
-    padding: 2em;
+	text-align: center;
+	height: 100%;
+	width: 100%;
+	padding: 2em;
 }
 
 .wrapper p {
-    padding-top: 2em;
-    font-size: 1.3em;
+	padding-top: 2em;
+	font-size: 1.3em;
 }
-
 
 /* FOOTER */
 
 footer {
-    width: 100%;
-    padding: 0 7vw 0 7vw;
-    background-color: #f79714;
+	width: 100%;
+	padding: 0 7vw 0 7vw;
+	background-color: #f79714;
 }
-
 
 /* HOME */
 
 .home-images img {
-    width: 400px;
-    padding-top: 2em;
+	width: 400px;
+	padding-top: 2em;
 }
 
 @media only screen and (max-width: 1290px) {
-    .home-img-1 {
-        display: none;
-    }
+	.home-img-1 {
+		display: none;
+	}
 }
 
 @media only screen and (max-width: 900px) {
-    .home-img-3 {
-        display: none;
-    }
+	.home-img-2 {
+		display: none;
+	}
 }
 
 /* LOGIN */
 
 .form-label-group {
-    padding-bottom: 2vh;
+	padding-bottom: 2vh;
 }
 
 button {
-    background-color: #f79714 !important;
-    border: 0 !important;
+	background-color: #f79714 !important;
+	border: 0 !important;
 }
 
 label {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 h5 {
-    padding-bottom: 1vh;
+	padding-bottom: 1vh;
 }
 
 .alert {
-    margin-top: 1vh;
+	margin-top: 1vh;
 }
 
-#clear-public-label, 
+#clear-public-label,
 #clear-private-label {
-    display: none;
+	display: none;
 }
