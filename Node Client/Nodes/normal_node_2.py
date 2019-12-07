@@ -113,7 +113,6 @@ class NodeClient:
         thread.start()  # Start the thread.
 
     def establishSocket(self):
-        print(f"\n{self.__host}:{self.__port} - Connecting...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # Open a new socket, s.
             try:
                 s.connect((self.__host, self.__port))  # Attempt to establish connection at given host and port.
@@ -135,17 +134,17 @@ class MailServer:
         port - Port of node to connect to."""
 
     def __init__(self, host=SERVER_IP, port=DEFAULT_MAIL_PORT):
-        start_server = websockets.serve(self.establishSocket, host, port)
+        self.__host = host
+        self.__port = port
+        start_server = websockets.serve(self.establishSocket, self.__host, self.__port)
+        print(f"\n[Mail Server] Listening on ws://{self.__host}:{self.__port}...")
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
 
-    async def establishSocket(self, host, port):
-        print(f"\n[Mail Server] Listening on ws://{host}:{port}...")
-        uri = f"ws://{host}:{port}"
-        async with websockets.connect(uri) as websocket:
-            address = await websocket.recv()
-            print(f"{address} requested mail...")
-            await websocket.send("hello")
+    async def establishSocket(self, websocket, path):
+        public_key = await websocket.recv()
+        print(f"\n{self.__host}:{self.__port} ({public_key}) requested mail...")
+        await websocket.send("Successfully Connected. Welcome to the BlockMail network!")
 
 
 if __name__ == "__main__":

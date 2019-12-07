@@ -26,7 +26,7 @@ class Server:
         async with websockets.connect(uri) as websocket:
             address = await websocket.recv()
             print(f"{address} requested mail...")
-            await websocket.send("hello")
+            await websocket.send("Successfully Connected. Welcome to the BlockMail network!")
 
     # def establishSocket(self, host, port):
     #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

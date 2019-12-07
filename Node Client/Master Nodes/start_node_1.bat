@@ -1,0 +1,1 @@
+start PowerShell -NoExit -Command "python blockchain_handler_1.py"

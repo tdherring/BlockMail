@@ -1,4 +1,4 @@
-const MASTER_NODES = ["localhost:41286"];
+const MASTER_NODES = ["127.0.0.1:41286", "127.0.0.2:41286", "127.0.0.3:41286", "127.0.0.4:41286"];
 
 function establishConnection() {
     for (var x = 0; x < MASTER_NODES.length; x++) {
@@ -7,12 +7,12 @@ function establishConnection() {
 }
 
 function createSocket(address) {
-    var socket = new WebSocket("ws://" + address, ["mail"]);
-    socket.onopen = function() {
+    var socket = new WebSocket("ws://" + address);
+    socket.onopen = function () {
         console.log(getCookie("ecdsa_public"));
         socket.send(getCookie("ecdsa_public"));
     };
-    socket.onmessage = function(event) {
+    socket.onmessage = function (event) {
         console.log(event.data);
     };
 }
