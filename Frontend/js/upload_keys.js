@@ -5,7 +5,10 @@ $("#ecdsa-public-file").change(function () {
         $("#ecdsa-public").val(event.target.result);
     }
     reader.onerror = error => reject(error);
-    reader.readAsText(document.getElementById("ecdsa-public-file").files[0]);
+    reader.readAsText(this.files[0]);
+    $("#ecdsa-public-file-label").css("display", "none");
+    $("#clear-public-label").css("display", "block");
+});
 
 $("#ecdsa-private-file").change(function () {
     var reader = new FileReader();
