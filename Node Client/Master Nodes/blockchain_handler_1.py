@@ -1,11 +1,12 @@
 import socket
 import threading
 import json
-import asyncio
 import websockets
 import asyncio
+import datetime
 import time
 import random
+import os
 
 VERSION = "1.0"
 DEFAULT_DISCOVERY_PORT = 41285  # Blockchain node discovery port. DO NOT CHANGE.
@@ -137,15 +138,77 @@ class MailServer:
     def __init__(self, host=SERVER_IP, port=DEFAULT_MAIL_PORT):
         self.__host = host
         self.__port = port
-        start_server = websockets.serve(self.establishSocket, self.__host, self.__port)
+        start_server = websockets.serve(self.establishSocket, self.__host, self.__port)  # Create websocket listener.
         print(f"\n[Mail Server] Listening on ws://{self.__host}:{self.__port}...")
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
 
     async def establishSocket(self, websocket, path):
-        public_key = await websocket.recv()
-        print(f"\n{self.__host}:{self.__port} ({public_key}) requested mail...")
-        await websocket.send("Successfully Connected. Welcome to the BlockMail network!")
+        data = await websocket.recv()  # Wait to receive data from client.
+        try:
+            data_json = json.loads(data)
+        except:
+            print("Invalid data stream received. Not a JSON.")
+        if data_json["action"] == "GET":
+            print(f"\n{self.__host}:{self.__port} ({data_json['body']}) requested mail...")
+        elif data_json["action"] == "SEND":
+            Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject"], data_json["body"])
+        else:
+            print("Invalid data stream received.")
+        await websocket.send("Successfully Connected. Welcome to the BlockMail network!")  # When received, send message back to client.
+
+
+class Block:
+    @staticmethod
+    def getAllBlocks():
+        all_blocks = {}
+        if os.path.exists("blocks/all_blocks.txt"):
+            all_blocks = open(f"blocks/all_blocks.txt", "r").read()
+        return all_blocks
+
+    @staticmethod
+    def writeToAllBlocks(block_id, data):
+        all_blocks_dict = {}
+        all_blocks = Block.getAllBlocks()
+        if len(all_blocks) != 0:
+            all_blocks_dict = eval(all_blocks)
+        all_blocks_dict[block_id] = data
+        all_blocks = open(f"blocks/all_blocks.txt", "w")
+        all_blocks.write(str(all_blocks_dict))
+
+    def __init__(self):
+        self.makeDirectory()
+        self.newBlock()
+
+    def makeDirectory(self):
+        if not os.path.exists("blocks"):
+            os.mkdir("blocks")
+
+    def newBlock(self):
+        all_blocks_dict = {}
+        all_blocks = Block.getAllBlocks()
+        print(all_blocks)
+        if len(all_blocks) != 0:
+            all_blocks_dict = eval(all_blocks)
+        block_id = f"b{len(all_blocks_dict)}"
+        self.__file = open(f"blocks/{block_id}.block", "w+")
+        data_to_write = {"block": block_id, "node": f"{SERVER_IP}: {DEFAULT_DISCOVERY_PORT}"}
+        self.__file.write(str(data_to_write))
+        Block.writeToAllBlocks(block_id, data_to_write)
+
+
+class Mail:
+
+    def __init__(self, send_addr, recv_addr, subject, body):
+        self.__send_addr = send_addr
+        self.__recv_addr = recv_addr
+        self.__subject = subject
+        self.__body = body
+        self.__date_time = datetime.datetime.now()
+        self.newMail()
+
+    def newMail(self):
+        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject   : {self.__subject}\nBody      : {self.__body}\nDate/Time : {self.__date_time}")
 
 
 if __name__ == "__main__":
@@ -157,5 +220,6 @@ if __name__ == "__main__":
     for node in MASTER_NODES:
         if node != SERVER_IP:
             NodeClient(host=node)  # Port not required as all master nodes use default discovery port.
+    Block()
     NodeServer()  # Start NodeServer.
     MailServer()  # Start MailServer.

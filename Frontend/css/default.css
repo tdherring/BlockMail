@@ -102,9 +102,6 @@ footer {
 
 /* LOGIN */
 
-.form-label-group {
-	padding-bottom: 2vh;
-}
 
 button {
 	background-color: #f79714 !important;
@@ -115,12 +112,12 @@ label {
 	cursor: pointer;
 }
 
-h5 {
+.form-signin * {
 	padding-bottom: 1vh;
 }
 
 .alert {
-	margin-top: 1vh;
+	margin: 1vh 0 0 0;
 }
 
 #clear-public-label,

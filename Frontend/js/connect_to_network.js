@@ -9,8 +9,14 @@ function establishConnection() {
 function createSocket(address) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
-        console.log(getCookie("ecdsa_public"));
-        socket.send(getCookie("ecdsa_public"));
+        let email_data = {
+            "action": "SEND",
+            "send_addr": getCookie("ecdsa_public"),
+            "recv_addr": null,
+            "subject": null,
+            "body": null
+        }
+        socket.send(JSON.stringify(email_data));
     };
     socket.onmessage = function (event) {
         console.log(event.data);
