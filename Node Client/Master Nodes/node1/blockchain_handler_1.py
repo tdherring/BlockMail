@@ -8,6 +8,7 @@ import time
 import random
 import os
 import math
+import shutil
 
 VERSION = "1.0"
 DEFAULT_DISCOVERY_PORT = 41285  # Blockchain node discovery port. DO NOT CHANGE.
@@ -15,6 +16,7 @@ DEFAULT_MAIL_PORT = 41286  # Blockchain mail exchange port. DO NOT CHANGE.
 MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4"]
 NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign "known nodes".
 KNOWN_NODES = []
+RECV_SIZE = 4096  # The size of the receive buffer on other nodes. DO NOT CHANGE.
 SERVER_IP = "127.0.0.1"
 
 
@@ -28,7 +30,6 @@ class NodeServer:
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
         self.__host = host
         self.__port = port
-        self.__json_data = ""
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
 
@@ -48,46 +49,47 @@ class NodeServer:
 
     def acceptConnection(self, s):
         connection, address = s.accept()  # Accept data.
-        received_blockchain_data = ""
         with connection:
             while True:
                 data = connection.recv(4096)  # Maximum data stream size of 4096 bytes.
                 if data:
-                    self.__json_data = self.isJson(data.decode("utf-8"))
-                    if self.__json_data:  # Is data in correct format?  # Is data in correct format?
-                        if "origin_host" in self.__json_data:
-                            origin_host = self.__json_data["origin_host"]
-                            print(f"\n[Node Discovery] {self.__json_data['origin_host']}:{str(address[1])} - Peer Connected.")
+                    json_data = self.isJson(data.decode("utf-8"))
+                    if json_data:  # Is data in correct format?
+                        if "origin_host" in json_data:
+                            origin_host = json_data["origin_host"]
+                            print(f"\n[Node Discovery] {json_data['origin_host']}:{str(address[1])} - Peer Connected.")
                             if SERVER_IP in MASTER_NODES:
-                                self.populateNodesOnNetworkMasters()  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
+                                self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
                             else:
-                                for node in self.__json_data["nodes_on_network"]:
-                                    if node not in NODES_ON_NETWORK:
-                                        NODES_ON_NETWORK.append(node)
+                                self.populateNodesOnNetwork(json_data)
                                 while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
                                     self.chooseNodesToAdd()
-                        elif "b0" in self.__json_data:
-                            print("\n[Blockchain] Blockchain Successfully Updated!")
-                            received_blockchain_data = self.__json_data
-                            download_blockchain_file = open("downloaded_blockchain.chain", "a+")
-                            download_blockchain_file.write(received_blockchain_data)
-                            print(received_blockchain_data)
-                        else:
-                            print("\nData received was JSON, but contents are invalid.")
-                    else:
-                        decoded_data = data.decode("utf-8")
-                        print("\n[Blockchain] Updating Blockchain...")
-                        download_blockchain_file = open("downloaded_blockchain.chain", "a+")
-                        download_blockchain_file.write(decoded_data)
-                        received_blockchain_data += decoded_data
-                        if self.isJson(received_blockchain_data):
-                            print("\n[Blockchain] Blockchain Successfully Updated!")
-                            print(received_blockchain_data)
+                        elif "b0" in json_data and self.processIncomingBlockchain(data):  # Blockchain Transfer. <= 4096 bytes.
                             break
                         else:
-                            print("\nMalformed Blockchain Data Received.")
+                            print("\nData received was JSON, but contents are invalid.")
+                    elif self.processIncomingBlockchain(data):  # Blockchain Transfer. > 4096 bytes (split into various segments - recombine and write to file here)
+                        break
             print(f"\n{origin_host}:{str(address[1])} - Connection Closed.")
             self.acceptConnection(s)
+
+    def isJson(self, string):
+        try:
+            json_data = json.loads(string)  # Try to parse JSON.
+        except ValueError:
+            return False  # If ValueError - not JSON.
+        return json_data
+
+    def populateNodesOnNetwork(self, json_data):
+        for node in json_data["nodes_on_network"]:
+            if node not in NODES_ON_NETWORK:
+                NODES_ON_NETWORK.append(node)
+
+    def populateNodesOnNetworkMasters(self, json_data):
+        if json_data["origin_host"] not in NODES_ON_NETWORK:  # Node not already in NODES_ON_NETWORK?
+            NODES_ON_NETWORK.append(json_data["origin_host"])  # Add the node to array containing all nodes on network.
+            print(f"\n[Node Discovery] New Node Joined the Network: {json_data['origin_host']}")
+            NodeClient(host=json_data["origin_host"])
 
     def discoverNodes(self):
         if len(KNOWN_NODES) < len(MASTER_NODES):  # Should I be discovering more nodes? (Less than number of master nodes known).
@@ -100,21 +102,24 @@ class NodeServer:
             KNOWN_NODES.append(NODES_ON_NETWORK[node_index])  # Add node to known nodes.
             print(f"\n[Node Discovery] New Neighbour Found! Neighbouring Nodes: {KNOWN_NODES}")
 
-    def populateNodesOnNetworkMasters(self):
-        if self.__json_data["origin_host"] not in NODES_ON_NETWORK:  # Node not already in NODES_ON_NETWORK?
-            NODES_ON_NETWORK.append(self.__json_data["origin_host"])  # Add the node to array containing all nodes on network.
-            print(f"\n[Node Discovery] New Node Joined the Network: {self.__json_data['origin_host']}")
-            NodeClient(host=self.__json_data["origin_host"])
-
-    def isJson(self, string):
-        try:
-            json_data = json.loads(string)  # Try to parse JSON.
-        except ValueError:
-            return False  # If ValueError - not JSON.
-        return json_data
-
-    def getJson(self):
-        return self.__json_data
+    def processIncomingBlockchain(self, data):
+        decoded_data = data.decode("utf-8")
+        download_blockchain_file = open("downloaded_blockchain.chain", "a+")
+        download_blockchain_file.write(decoded_data)
+        download_blockchain_file.close()
+        if decoded_data[-2:] == "}}":  # End of JSON?
+            print(os.stat("downloaded_blockchain.chain").st_size, os.stat("blocks/blockchain.chain").st_size)
+            if os.stat("downloaded_blockchain.chain").st_size > os.stat("blocks/blockchain.chain").st_size:
+                os.remove("blocks/blockchain.chain")
+                shutil.copyfile("downloaded_blockchain.chain", "blocks/blockchain.chain")
+                os.remove("downloaded_blockchain.chain")
+                print("\n[Blockchain] Blockchain Successfully Updated!")
+            else:
+                print("\n[Blockchain] Received Outdated Blockchain. No Changes Made.")
+            return True
+        else:
+            print("\n[Blockchain] Updating Blockchain...")
+        return False
 
 # Logic for connecting to other nodes on the BlockMail network.
 
@@ -128,30 +133,34 @@ class NodeClient:
     def __init__(self, host, port=DEFAULT_DISCOVERY_PORT):
         self.__host = host
         self.__port = port
-
         thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
         thread.start()  # Start the thread.
 
     def establishSocket(self):
-        RECV_SIZE = 4096
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # Open a new socket, s.
             try:
                 s.connect((self.__host, self.__port))  # Attempt to establish connection at given host and port.
-                data_to_send = {"version": VERSION,
-                                "origin_host": SERVER_IP,
-                                "origin_port": DEFAULT_DISCOVERY_PORT,
-                                "nodes_on_network": NODES_ON_NETWORK}
-                s.sendall(bytes(json.dumps(data_to_send), encoding="UTF8"))
-                # Send blockchain data.
-                segments = int(math.ceil(os.stat("blocks/blockchain.chain").st_size / RECV_SIZE))  # Calculate number of segments to split into.
-                blockchain_contents = open("blocks/blockchain.chain", "r").read()
-                for position in range(segments):
-                    data_to_send = blockchain_contents[position*RECV_SIZE: RECV_SIZE*(position+1)]
-                    s.sendall(bytes(data_to_send, encoding="UTF8"))
+                self.sendNodeInfo(s)  # Send information about this node.
+                self.sendBlockchain(s)  # Send blockchain data.
             except ConnectionRefusedError:
                 print(f"\n[Node Discovery] {self.__host}:{str(self.__port)} - Connection refused (node may be offline). Retrying in 10 seconds...")
                 time.sleep(10)  # Wait for 10 seconds
                 self.establishSocket()  # Retry
+
+    def sendNodeInfo(self, s):
+        data_to_send = {"version": VERSION,
+                        "origin_host": SERVER_IP,
+                        "origin_port": DEFAULT_DISCOVERY_PORT,
+                        "nodes_on_network": NODES_ON_NETWORK}
+        s.sendall(bytes(json.dumps(data_to_send), encoding="UTF8"))
+
+    def sendBlockchain(self, s):
+        segments = int(math.ceil(os.stat("blocks/blockchain.chain").st_size / RECV_SIZE))  # Calculate number of segments to split into.
+        blockchain_file = open("blocks/blockchain.chain", "r")  # Open this node's copy of the blockchain for reading.
+        for position in range(segments):
+            data_to_send = blockchain_file.read(RECV_SIZE*(position+1))
+            s.sendall(bytes(data_to_send, encoding="UTF8"))
+        blockchain_file.close()
 
 
 class MailServer:
