@@ -49,13 +49,14 @@ class NodeServer:
 
     def acceptConnection(self, s):
         node_comms_complete = False
+        expected_size = 0
         connection, address = s.accept()  # Accept data.
         with connection:
             while True:
                 data = connection.recv(RECV_SIZE)  # Maximum data stream size of 4096 bytes.
                 if data:
-                    print(node_comms_complete)
                     decoded_data = data.decode("utf-8")
+
                     print("x: " + decoded_data)
                     json_data = self.isJson(decoded_data)
                     if decoded_data[-1] == "\n" or decoded_data[0] == "\n":
@@ -72,13 +73,17 @@ class NodeServer:
                                     while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
                                         self.chooseNodesToAdd()
                     else:
+                        if expected_size == 0:
+                            hex_length = decoded_data.split("{")[0]
+                            expected_size = int(hex_length, 16)
+                            decoded_data = decoded_data[len(hex_length):]  # Cut size off front
+                        print(f"Expecting {expected_size} bytes of data")
                         self.processIncomingBlockchain(decoded_data)
-                        print("asdasdadadad", decoded_data[-2:] == "}}")
-                        if decoded_data[-2:] == "}}":
+                        print(os.stat("downloaded_blockchain.chain").st_size, expected_size)
+                        if os.stat("downloaded_blockchain.chain").st_size == expected_size:
                             self.checkBlockchainUpdate()
-
+                            expected_size = 0
         print(f"\n{origin_host}:{str(address[1])} - Connection Closed.")
-        self.establishSocket()
 
     def isJson(self, string):
         try:
@@ -159,7 +164,9 @@ class NodeClient:
 
     def sendBlockchain(self, s):
         blockchain_file = open("blocks/blockchain.chain", "r")  # Open this node's copy of the blockchain for reading.
-        s.sendall(bytes(blockchain_file.read(), encoding="UTF8"))
+        read_file = blockchain_file.read()
+        file_size = hex(len(read_file))
+        s.sendall(bytes(file_size + read_file, encoding="UTF8"))
         blockchain_file.close()
 
 
