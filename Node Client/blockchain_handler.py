@@ -55,7 +55,10 @@ class Server:
 
 class Client:
     def __init__(self, host, port=LISTENING_PORT):
-        self.__known_nodes = []
+        self.__KNOWN_NODES = []
+
+
+RECV_SIZE = 256  # The size of the receive buffer on other nodes. DO NOT CHANGE.
         self.establishSocket(host, port)
 
     def establishSocket(self, host, port):

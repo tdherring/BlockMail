@@ -21,7 +21,7 @@ RECV_SIZE = 256  # The size of the receive buffer on other nodes. DO NOT CHANGE.
 SERVER_IP = "127.0.0.1"
 
 
-class NodeServer:
+class NodeServer(threading.Thread):
     """Controls communication between nodes on the BlockMail network along with NodeNodeClient.
     Discovers neighbouring nodes.\n
     Takes two arguments:
@@ -29,10 +29,12 @@ class NodeServer:
         port - Port to host server on. """
 
     def __init__(self, host=SERVER_IP, port=DEFAULT_DISCOVERY_PORT):
+        super(NodeServer, self).__init__()
         self.__host = host
         self.__port = port
-        thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
-        thread.start()  # Start the thread.
+
+    def run(self):  # Required by threading module. DO NOT RENAME.
+        self.establishSocket()
 
     def establishSocket(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # Open a new socket, s.
@@ -62,36 +64,46 @@ class NodeServer:
                         decoded_data = decoded_data[len(hex_length):]  # Cut size off front
                     print(f"\n[Communication] Connection Received... Expecting {expected_size} bytes of data.")
                     self.processIncomingData(decoded_data)  # Store incoming data in file.
-                    print(os.stat("tmp_in.tmp").st_size, expected_size)
-                    if os.stat("tmp_in.tmp").st_size == expected_size:  # All data in stream received?
+                    print(os.stat(self.__tmp_file_name).st_size, expected_size)
+                    if os.stat(self.__tmp_file_name).st_size == expected_size:  # All data in stream received?
                         self.checkDataType()
                         expected_size = -1  # Data stream complete, so reset expected_size (Ready for more data).
-                        os.remove("tmp_in.tmp")  # ... And remove the tmp file.
+                        os.remove(self.__tmp_file_name)  # ... And remove the tmp file.
 
     def processIncomingData(self, data):
-        tmp_file = open("tmp_in.tmp", "a+")
+        file_num = 1
+        file_name_set = False
+        while not file_name_set:
+            try:
+                self.__tmp_file_name = f"tmp_in_{str(file_num)}.tmp"
+                tmp_file = open(self.__tmp_file_name, "a+")
+                file_name_set = True
+            except:
+                file_num += 1
+                self.__tmp_file_name = f"tmp_in_{str(file_num)}.tmp"
+                tmp_file = open(self.__tmp_file_name, "a+")
         tmp_file.write(data)
         tmp_file.close()
 
     def checkDataType(self):
-        for prefix, val_type, value in ijson.parse(open("tmp_in.tmp", "r")):  # Iterate through JSON (which may be huge!). Avoid reading into memory.
-            if prefix == "type" and value == "BLOCKCHAIN":
-                self.checkBlockchainUpdate()
-                break
-            elif prefix == "type" and value == "NODE_COMMS":
+        for prefix, val_type, value in ijson.parse(open(self.__tmp_file_name, "r")):  # Iterate through JSON (which may be huge!). Avoid reading into memory.
+            if prefix == "type" and value == "NODE_COMMS":
                 self.nodeCommunicationControl()
+                break
+            elif prefix == "type" and value == "BLOCKCHAIN":
+                self.checkBlockchainUpdate()
                 break
 
     def checkBlockchainUpdate(self):
-        if os.stat("tmp_in.tmp").st_size > os.stat("blocks/blockchain.chain").st_size:
+        if os.stat(self.__tmp_file_name).st_size > os.stat("blocks/blockchain.chain").st_size:
             print("\n[Blockchain] Updating Blockchain...")
-            shutil.copy("tmp_in.tmp", "blocks/blockchain.chain")
+            shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
             print("\n[Blockchain] Blockchain Successfully Updated!")
         else:
-            print("\n[Blockchain] Received Outdated Blockchain. No Changes Made.")
+            print("\n[Blockchain] Received the Same or Outdated Blockchain. No Changes Made.")
 
     def nodeCommunicationControl(self):
-        json_data = json.loads(open("tmp_in.tmp", "r").read())
+        json_data = json.loads(open(self.__tmp_file_name, "r").read())
         print(f"\n[Node Discovery] {json_data['origin_host']} - Peer Connected.")
         if SERVER_IP in MASTER_NODES:
             self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
@@ -126,17 +138,19 @@ class NodeServer:
 # Logic for connecting to other nodes on the BlockMail network.
 
 
-class NodeClient:
+class NodeClient(threading.Thread):
     """Controls communication between nodes on the BlockMail network along with NodeServer.
     Sends node information to peers.
         host - IP of node to connect to.
         port - Port of node to connect to."""
 
     def __init__(self, host, port=DEFAULT_DISCOVERY_PORT):
+        super(NodeClient, self).__init__()
         self.__host = host
         self.__port = port
-        thread = threading.Thread(target=self.establishSocket)  # Create Server thread to avoid blocking.
-        thread.start()  # Start the thread.
+
+    def run(self):  # Required by threading module. DO NOT RENAME.
+        self.establishSocket()
 
     def establishSocket(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # Open a new socket, s.
@@ -195,7 +209,7 @@ class MailServer:
         await websocket.send("Successfully Connected. Welcome to the BlockMail network!")  # When received, send message back to client.
 
 
-class Block:
+class Block():
     @staticmethod
     def getAllBlocks():
         all_blocks = {}
@@ -253,9 +267,11 @@ if __name__ == "__main__":
         print(f"*** STARTING MASTER NODE: {SERVER_IP} ***\n")
     else:
         print(f"*** STARTING NODE: {SERVER_IP} ***\n")
+    Block()
     for node in MASTER_NODES:
         if node != SERVER_IP:
-            NodeClient(host=node)  # Port not required as all master nodes use default discovery port.
-    Block()
-    NodeServer()  # Start NodeServer.
-    MailServer()  # Start MailServer.
+            node_client_thread = NodeClient(host=node)  # Port not required as all master nodes use default discovery port.
+            node_client_thread.start()
+    node_server_thread = NodeServer()
+    node_server_thread.start()
+    MailServer()

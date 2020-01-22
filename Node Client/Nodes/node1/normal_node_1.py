@@ -18,7 +18,7 @@ MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4"]
 NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign "known nodes".
 KNOWN_NODES = []
 RECV_SIZE = 256  # The size of the receive buffer on other nodes. DO NOT CHANGE.
-SERVER_IP = "127.0.0.2"
+SERVER_IP = "127.0.0.5"
 
 
 class NodeServer(threading.Thread):
