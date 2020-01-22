@@ -9,6 +9,7 @@ import random
 import os
 import math
 import shutil
+import ijson
 
 VERSION = "1.0"
 DEFAULT_DISCOVERY_PORT = 41285  # Blockchain node discovery port. DO NOT CHANGE.
@@ -48,50 +49,56 @@ class NodeServer:
             self.acceptConnection(s)  # Accept connections.
 
     def acceptConnection(self, s):
-        node_comms_complete = False
-        expected_size = 0
+        expected_size = -1
         connection, address = s.accept()  # Accept data.
         with connection:
             while True:
-                data = connection.recv(RECV_SIZE)  # Maximum data stream size of 4096 bytes.
+                data = connection.recv(RECV_SIZE)  # Maximum data stream size of 256 bytes.
                 if data:
                     decoded_data = data.decode("utf-8")
+                    if expected_size == -1:  # Expecting new data stream?
+                        hex_length = decoded_data.split("{")[0]
+                        expected_size = int(hex_length, 16)  # Convert hex to integer.
+                        decoded_data = decoded_data[len(hex_length):]  # Cut size off front
+                    print(f"\n[Communication] Connection Received... Expecting {expected_size} bytes of data.")
+                    self.processIncomingData(decoded_data)  # Store incoming data in file.
+                    print(os.stat("tmp_in.tmp").st_size, expected_size)
+                    if os.stat("tmp_in.tmp").st_size == expected_size:  # All data in stream received?
+                        self.checkDataType()
+                        expected_size = -1  # Data stream complete, so reset expected_size (Ready for more data).
+                        os.remove("tmp_in.tmp")  # ... And remove the tmp file.
 
-                    print("x: " + decoded_data)
-                    json_data = self.isJson(decoded_data)
-                    if decoded_data[-1] == "\n" or decoded_data[0] == "\n":
-                        node_comms_complete = True
-                    elif not node_comms_complete:
-                        if json_data:  # Is data in correct format?
-                            if "origin_host" in json_data:
-                                origin_host = json_data["origin_host"]
-                                print(f"\n[Node Discovery] {json_data['origin_host']}:{str(address[1])} - Peer Connected.")
-                                if SERVER_IP in MASTER_NODES:
-                                    self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
-                                else:
-                                    self.populateNodesOnNetwork(json_data)
-                                    while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
-                                        self.chooseNodesToAdd()
-                    else:
-                        if expected_size == 0:
-                            hex_length = decoded_data.split("{")[0]
-                            expected_size = int(hex_length, 16)
-                            decoded_data = decoded_data[len(hex_length):]  # Cut size off front
+    def processIncomingData(self, data):
+        tmp_file = open("tmp_in.tmp", "a+")
+        tmp_file.write(data)
+        tmp_file.close()
 
-                        print(f"Expecting {expected_size} bytes of data")
-                        self.processIncomingBlockchain(decoded_data)
-                        print(os.stat("downloaded_blockchain.chain").st_size, expected_size)
-                        if os.stat("downloaded_blockchain.chain").st_size == expected_size:
-                            self.checkBlockchainUpdate()
-                            expected_size = 0
-        print(f"\n{origin_host}:{str(address[1])} - Connection Closed.")
+    def checkDataType(self):
+        for prefix, val_type, value in ijson.parse(open("tmp_in.tmp", "r")):  # Iterate through JSON (which may be huge!). Avoid reading into memory.
+            if prefix == "type" and value == "BLOCKCHAIN":  # Blockchain data.
+                self.checkBlockchainUpdate()
+                break
+            elif prefix == "type" and value == "NODE_COMMS":  # Node commuinication data.
+                self.nodeCommunicationControl()
+                break
 
-    def isJson(self, string):
-        try:
-            json_data = json.loads(string)  # Try to parse JSON.
-        except ValueError:
-            return False  # If ValueError - not JSON.
-        return json_data
+    def checkBlockchainUpdate(self):
+        if os.stat("tmp_in.tmp").st_size > os.stat("blocks/blockchain.chain").st_size:
+            print("\n[Blockchain] Updating Blockchain...")
+            shutil.copy("tmp_in.tmp", "blocks/blockchain.chain")
+            print("\n[Blockchain] Blockchain Successfully Updated!")
+        else:
+            print("\n[Blockchain] Received Outdated Blockchain. No Changes Made.")
+
+    def nodeCommunicationControl(self):
+        json_data = json.loads(open("tmp_in.tmp", "r").read())
+        print(f"\n[Node Discovery] {json_data['origin_host']} - Peer Connected.")
+        if SERVER_IP in MASTER_NODES:
+            self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
+        else:
+            self.populateNodesOnNetwork(json_data)
+            while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
+                self.chooseNodesToAdd()
 
     def populateNodesOnNetwork(self, json_data):
         for node in json_data["nodes_on_network"]:
@@ -114,20 +121,6 @@ class NodeServer:
         if NODES_ON_NETWORK[node_index] not in KNOWN_NODES and NODES_ON_NETWORK[node_index] != SERVER_IP:
             KNOWN_NODES.append(NODES_ON_NETWORK[node_index])  # Add node to known nodes.
             print(f"\n[Node Discovery] New Neighbour Found! Neighbouring Nodes: {KNOWN_NODES}")
-
-    def processIncomingBlockchain(self, data):
-        tmp_file = open("downloaded_blockchain.chain", "a+")
-        tmp_file.write(data)
-        tmp_file.close()
-
-    def checkBlockchainUpdate(self):
-        if os.stat("downloaded_blockchain.chain").st_size > os.stat("blocks/blockchain.chain").st_size:
-            print("\n[Blockchain] Updating Blockchain...")
-            shutil.copy("downloaded_blockchain.chain", "blocks/blockchain.chain")
-            print("\n[Blockchain] Blockchain Successfully Updated!")
-        else:
-            print("\n[Blockchain] Received Outdated Blockchain. No Changes Made.")
-        os.remove("downloaded_blockchain.chain")
 
 
 # Logic for connecting to other nodes on the BlockMail network.
@@ -157,13 +150,16 @@ class NodeClient:
                 self.establishSocket()  # Retry
 
     def sendNodeInfo(self, s):
-        data_to_send = {"version": VERSION,
+        data_to_send = {"type": "NODE_COMMS",
+                        "version": VERSION,
                         "origin_host": SERVER_IP,
                         "origin_port": DEFAULT_DISCOVERY_PORT,
                         "nodes_on_network": NODES_ON_NETWORK}
-        s.sendall(bytes(json.dumps(data_to_send) + "\n", encoding="UTF8"))
+        json_data = json.dumps(data_to_send)
+        file_size = hex(len(json_data))
+        s.sendall(bytes(file_size + json_data, encoding="UTF8"))
 
-    def sendBlockchain(self, s):
+    def sendBlockchain(self, s):  # TODO - SEGMENT TO STOP HUGE FILE READ IN
         blockchain_file = open("blocks/blockchain.chain", "r")  # Open this node's copy of the blockchain for reading.
         read_file = blockchain_file.read()
         file_size = hex(len(read_file))
@@ -209,10 +205,10 @@ class Block:
 
     @staticmethod
     def writeToAllBlocks(block_id, data):
-        all_blocks_dict = {}
+        all_blocks_dict = {"type": "BLOCKCHAIN"}
         all_blocks = Block.getAllBlocks()
         if len(all_blocks) != 0:
-            all_blocks_dict = eval(all_blocks)
+            all_blocks_dict.update(eval(all_blocks))
         all_blocks_dict[block_id] = data
         all_blocks = open(f"blocks/blockchain.chain", "w")
         json.dump(all_blocks_dict, all_blocks)
