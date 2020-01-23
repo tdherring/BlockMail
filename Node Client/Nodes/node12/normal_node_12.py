@@ -10,6 +10,7 @@ import os
 import math
 import shutil
 import ijson
+import ntplib
 
 VERSION = "1.0"
 DEFAULT_DISCOVERY_PORT = 41285  # Blockchain node discovery port. DO NOT CHANGE.
@@ -93,6 +94,9 @@ class NodeServer(threading.Thread):
             elif prefix == "type" and value == "BLOCKCHAIN":
                 self.checkBlockchainUpdate()
                 break
+            elif prefix == "type" and value == "BLOCK":
+                print("BLOCK RECEIVED")
+                break
 
     def checkBlockchainUpdate(self):
         if os.stat(self.__tmp_file_name).st_size > os.stat("blocks/blockchain.chain").st_size:
@@ -107,10 +111,9 @@ class NodeServer(threading.Thread):
         print(f"\n[Node Discovery] {json_data['origin_host']} - Peer Connected.")
         if SERVER_IP in MASTER_NODES:
             self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
-        else:
-            self.populateNodesOnNetwork(json_data)
-            while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
-                self.chooseNodesToAdd()
+        self.populateNodesOnNetwork(json_data)
+        while self.discoverNodes():  # Should I be looking for more nodes? (Less than number of master nodes known).
+            self.chooseNodesToAdd()
 
     def populateNodesOnNetwork(self, json_data):
         for node in json_data["nodes_on_network"]:
@@ -158,6 +161,13 @@ class NodeClient(threading.Thread):
                 s.connect((self.__host, self.__port))  # Attempt to establish connection at given host and port.
                 self.sendNodeInfo(s)  # Send information about this node.
                 self.sendBlockchain(s)  # Send blockchain data.
+                while True:
+                    local_time = Time.getLocalTime()
+                    if local_time.second == 0:
+                        print(local_time)
+                        self.broadcastBlock(s)
+                        time.sleep(1)  # Ensure only one broadcast
+                    time.sleep(0.2)
             except ConnectionRefusedError:
                 print(f"\n[Node Discovery] {self.__host}:{str(self.__port)} - Connection refused (node may be offline). Retrying in 10 seconds...")
                 time.sleep(10)  # Wait for 10 seconds
@@ -179,6 +189,43 @@ class NodeClient(threading.Thread):
         file_size = hex(len(read_file))
         s.sendall(bytes(file_size + read_file, encoding="UTF8"))
         blockchain_file.close()
+
+    def broadcastBlock(self, s):
+        data_to_send = {"type": "BLOCK"}
+        data_to_send.update(eval(open(f"blocks/{Block.current_block_name}.block").read()))
+        json_data = json.dumps(data_to_send)
+        file_size = hex(len(json_data))
+        s.sendall(bytes(file_size + json_data, encoding="UTF8"))
+
+
+class Time(threading.Thread):
+    """Ensures that Timing is accurate to keep block timings correct (enough).
+    Threaded, runs a check every 5 minutes. If the client becomes out of sync, exit."""
+
+    @staticmethod
+    def getLocalTime():
+        return datetime.datetime.now()
+
+    def __init__(self):
+        super(Time, self).__init__()
+
+    def run(self):
+        while True:
+            self.checkTimeSync()
+            time.sleep(300)
+
+    def checkTimeSync(self):
+        c = ntplib.NTPClient()
+        response = c.request("ntp2a.mcc.ac.uk", version=3)
+        response.offset
+        ntp_time = datetime.datetime.fromtimestamp(response.tx_time, datetime.timezone.utc)
+        local_time = datetime.datetime.now()
+        if (
+            ntp_time.year != local_time.year or ntp_time.month != local_time.month or ntp_time.day != local_time.day or ntp_time.hour
+            != local_time.hour or ntp_time.second != local_time.second or abs(local_time.microsecond-ntp_time.microsecond) > 50000
+        ):
+            print("\n[Time Error] This machine's time is too inaccurate. Please resynchronise with an NTP server and restart the client.")
+            os._exit(0)
 
 
 class MailServer:
@@ -210,22 +257,7 @@ class MailServer:
 
 
 class Block():
-    @staticmethod
-    def getAllBlocks():
-        all_blocks = {}
-        if os.path.exists("blocks/blockchain.chain"):
-            all_blocks = open(f"blocks/blockchain.chain", "r").read()
-        return all_blocks
-
-    @staticmethod
-    def writeToAllBlocks(block_id, data):
-        all_blocks_dict = {"type": "BLOCKCHAIN"}
-        all_blocks = Block.getAllBlocks()
-        if len(all_blocks) != 0:
-            all_blocks_dict.update(eval(all_blocks))
-        all_blocks_dict[block_id] = data
-        all_blocks = open(f"blocks/blockchain.chain", "w")
-        json.dump(all_blocks_dict, all_blocks)
+    current_block_name = ""
 
     def __init__(self):
         self.makeDirectory()
@@ -237,14 +269,30 @@ class Block():
 
     def newBlock(self):
         all_blocks_dict = {}
-        all_blocks = Block.getAllBlocks()
+        all_blocks = self.getAllBlocks()
         if len(all_blocks) != 0:
             all_blocks_dict = eval(all_blocks)
         block_id = f"b{len(all_blocks_dict)}"
+        Block.current_block_name = block_id
         self.__file = open(f"blocks/{block_id}.block", "w+")
         data_to_write = {"block": block_id, "node": f"{SERVER_IP}: {DEFAULT_DISCOVERY_PORT}"}
         json.dump(data_to_write, self.__file)
-        Block.writeToAllBlocks(block_id, data_to_write)
+        self.writeToAllBlocks(block_id, data_to_write)
+
+    def getAllBlocks(self):
+        all_blocks = {}
+        if os.path.exists("blocks/blockchain.chain"):
+            all_blocks = open(f"blocks/blockchain.chain", "r").read()
+        return all_blocks
+
+    def writeToAllBlocks(self, block_id, data):
+        all_blocks_dict = {"type": "BLOCKCHAIN"}
+        all_blocks = self.getAllBlocks()
+        if len(all_blocks) != 0:
+            all_blocks_dict.update(eval(all_blocks))
+        all_blocks_dict[block_id] = data
+        all_blocks = open(f"blocks/blockchain.chain", "w")
+        json.dump(all_blocks_dict, all_blocks)
 
 
 class Mail:
@@ -273,5 +321,7 @@ if __name__ == "__main__":
             node_client_thread = NodeClient(host=node)  # Port not required as all master nodes use default discovery port.
             node_client_thread.start()
     node_server_thread = NodeServer()
+    time_thread = Time()
+    time_thread.start()
     node_server_thread.start()
     MailServer()
