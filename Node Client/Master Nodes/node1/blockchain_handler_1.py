@@ -15,11 +15,12 @@ import ntplib
 VERSION = "1.0"
 DISCOVERY_PORT = 41285  # Blockchain node discovery port. DO NOT CHANGE.
 SYNC_PORT = 41287
-BLOCK_PORT = 41288
+BROADCAST_PORT = 41288
 MAIL_PORT = 41286  # Blockchain mail exchange port. DO NOT CHANGE.
 MASTER_NODES = ["127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4"]
 NODES_ON_NETWORK = []  # Used only for master nodes to keep track of and assign "known nodes".
 KNOWN_NODES = []
+CONNECTED_KNOWN_NODES = []
 RECV_SIZE = 256  # The size of the receive buffer on other nodes. DO NOT CHANGE.
 SERVER_IP = "127.0.0.1"
 
@@ -55,48 +56,60 @@ class Server(threading.Thread):
             self.acceptConnection(s)  # Accept connections.
 
     def acceptConnection(self, s):
-        expected_size = -1
-        expected_size_counter = 0
-        connection, address = s.accept()  # Accept data.
-        with connection:
-            while True:
-                data = connection.recv(RECV_SIZE)  # Maximum data stream size of 256 bytes.
-                if data:
-                    decoded_data = data.decode("utf-8")
-                    if expected_size == -1:  # Expecting new data stream?
-                        hex_length = decoded_data.split("{")[0]
-                        expected_size = int(hex_length, 16)  # Convert hex to integer.
-                        expected_size_counter = expected_size
-                        decoded_data = decoded_data[len(hex_length):]  # Cut size off front
-                        self.createTempFile()
-                    print(f"[{self.__server_type}] Connection Received... Expecting {expected_size_counter} more bytes of data...")
-                    print(decoded_data)
-                    self.processIncomingData(decoded_data)  # Store incoming data in file.
-                    if expected_size_counter > RECV_SIZE:
-                        expected_size_counter -= RECV_SIZE
-                    else:  # All data in stream received?
-                        expected_size = -1  # Data stream complete, so reset expected_size (Ready for more data).
-                        self.__tmp_file.close()
-                        print(f"[{self.__server_type}] All Data Received!")
-                        self.directToCorrectServer()
+        while True:
+            connection, address = s.accept()  # Accept data.
+            server_conn_thread = ServerConnection(connection, address, self.__server_type)
+            server_conn_thread.start()  # Thread the connection to allow multiple concurrent connections.
+
+
+class ServerConnection(threading.Thread):
+    def __init__(self, connection, address, server_type):
+        super(ServerConnection, self).__init__()
+        self.__connection = connection
+        self.__address = address
+        self.__server_type = server_type
+        self.__expected_size = -1
+        self.__expected_size_counter = 0
+
+    def run(self):
+        while True:
+            data = self.__connection.recv(RECV_SIZE)  # Maximum data stream size of 256 bytes.
+            decoded_data = data.decode("utf-8")
+            if data:
+                if self.__expected_size == -1:  # Expecting new data stream?
+                    hex_length = decoded_data.split("{")[0]
+                    self.__expected_size = int(hex_length, 16)  # Convert hex to integer.
+                    self.__expected_size_counter = self.__expected_size
+                    decoded_data = decoded_data[len(hex_length):]  # Cut size off front
+                self.createTempFile()
+                print(f"[{self.__server_type}] Connection Received... Expecting {self.__expected_size_counter} more bytes of data...")
+                print(decoded_data)
+                self.processIncomingData(decoded_data)  # Store incoming data in file.
+                if self.__expected_size_counter > RECV_SIZE:
+                    self.__expected_size_counter -= RECV_SIZE
+                else:  # All data in stream received?
+                    self.__expected_size = -1  # Data stream complete, so reset expected_size (Ready for more data).
+                    self.__tmp_file.close()
+                    print(f"[{self.__server_type}] All Data Received!")
+                    self.directToCorrectServer()
 
     def directToCorrectServer(self):
         if self.__server_type == "DISCOVERY":
             DiscoverySever(self.__tmp_file_name)
         elif self.__server_type == "BLOCKCHAIN":
             SyncServer(self.__tmp_file_name)
-        elif self.__server_type == "BLOCK":
-            BlockServer(self.__tmp_file_name)
+        elif self.__server_type == "BROADCAST":
+            BroadcastServer(self.__tmp_file_name)
 
     def createTempFile(self):
         file_num = 1
         file_name_set = False
         while not file_name_set:
-            if os.path.exists(f"{self.__server_type + str(file_num)}.tmp"):
+            if os.path.exists(f"temp/{self.__server_type + str(file_num)}.tmp"):
                 file_num += 1
             else:
                 file_name_set = True
-        self.__tmp_file_name = f"{self.__server_type + str(file_num)}.tmp"
+        self.__tmp_file_name = f"temp/{self.__server_type + str(file_num)}.tmp"
         self.__tmp_file = open(self.__tmp_file_name, "a+")
 
     def processIncomingData(self, data):
@@ -112,7 +125,8 @@ class DiscoverySever():
 
     def nodeCommunicationControl(self):
         json_data = json.loads(open(self.__tmp_file_name, "r").read())
-        os.remove(self.__tmp_file_name)  # ... And remove the tmp file.
+        if json_data["origin_host"] not in CONNECTED_KNOWN_NODES:
+            CONNECTED_KNOWN_NODES.append(json_data['origin_host'])
         print(f"[DISCOVERY] {json_data['origin_host']} - Peer Connected.")
         self.initBlockchainSync(json_data['origin_host'])
         if SERVER_IP in MASTER_NODES:
@@ -145,62 +159,68 @@ class DiscoverySever():
             print(f"[DISCOVERY] New Neighbour Found! Neighbouring Nodes: {KNOWN_NODES}")
             discovery_client_thread = threading.Thread(target=DiscoveryClient, args=(node,))
             sync_client_thread = threading.Thread(target=SyncClient, args=(node,))
-            block_client_thread = threading.Thread(target=BlockClient, args=(node,))
             discovery_client_thread.start()
             sync_client_thread.start()
-            block_client_thread.start()
 
     def initBlockchainSync(self, host):
         threading.Thread(target=SyncClient, args=(host,))
 
 
 class SyncServer():
+    num_synced = 1  # Keep track of number of blockchains received and synced from other nodes.
+
+    @staticmethod
+    def readyToCreateBlocks():
+        print(CONNECTED_KNOWN_NODES, SyncServer.num_synced)
+        return SyncServer.num_synced >= len(CONNECTED_KNOWN_NODES)
+
     def __init__(self, tmp_file_name):
         self.__tmp_file_name = tmp_file_name
         print("[BLOCKCHAIN] Sync Server Started!")
         self.checkBlockchainUpdate()
 
     def checkBlockchainUpdate(self):
-        if not os.path.exists("blocks"):
-            os.mkdir("blocks")
-            print("[BLOCKCHAIN] Synchronising Latest Blockchain...")
-            shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
-            print("[BLOCKCHAIN] Blockchain Successfully Synchronised!")
-        else:
+        if os.path.exists("blocks/blockchain.chain"):
             if os.stat(self.__tmp_file_name).st_size > os.stat("blocks/blockchain.chain").st_size:
                 print("[BLOCKCHAIN] Updating Blockchain...")
                 shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
                 print("[BLOCKCHAIN] Blockchain Successfully Updated!")
+                SyncServer.num_synced += 1
             else:
                 print("[BLOCKCHAIN] Received the Same or Outdated Blockchain. No Changes Made.")
-        os.remove(self.__tmp_file_name)  # ... And remove the tmp file.
+                SyncServer.num_synced += 1
+        else:
+            print("[BLOCKCHAIN] Synchronising Blockchain...")
+            shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
+            print("[BLOCKCHAIN] Blockchain Successfully Synchronised!")
+            SyncServer.num_synced += 1
 
 
-class BlockServer():
+class BroadcastServer():
     def __init__(self, tmp_file_name):
         self.__tmp_file_name = tmp_file_name
-        print("[BLOCK] Block Server Started!")
-        self.checkBlockSize()
+        print("[BROADCAST] Block Server Started!")
+        self.addToBlock()
 
-    def checkBlockSize(self):
-        block_num = self.getBlockNum()
-        if os.path.exists(f"blocks/{block_num}.block"):
-            if os.stat(self.__tmp_file_name).st_size > os.stat(f"blocks/{block_num}.block").st_size:
-                print("[BLOCK] Larger Block Received! Updating...")
-                shutil.copy(self.__tmp_file_name, f"blocks/{block_num}.block")
-                print("[BLOCK] Block Successfully Updated!")
+    def addToBlock(self):
+        block_num = Block.current_block_name
+        print("[BROADCAST] New Email Received, Updating...")
+        block_read_in = eval(open(f"blocks/{block_num}.block").read())
+        temp_mail_file = eval(open(f"{self.__tmp_file_name}", "r").read())
+        print(temp_mail_file)
+        block_read_in["mail"].append(temp_mail_file)
+        block_file = open(f"blocks/{block_num}.block", "w")
+        json.dump(block_read_in, block_file)
+        block_file.close()
+        print("[BROADCAST] Block Successfully Updated!")
+        origin = temp_mail_file["origin_node"]
+        self.broadcastFurther(temp_mail_file, origin)
 
-                # TODO - ADD TO BLOCKCHAIN.CHAIN
-            else:
-                print("[BLOCK] Comparing Received Block...")
-        else:
-            print("[BLOCK] Block Successfully Updated!")
-        os.remove(self.__tmp_file_name)  # ... And remove the tmp file.
-
-    def getBlockNum(self):
-        for prefix, val_type, value in ijson.parse(open(self.__tmp_file_name, "r")):
-            if prefix == "block":
-                return value
+    def broadcastFurther(self, mail, origin):
+        for node in CONNECTED_KNOWN_NODES:
+            if node != origin:
+                broadcast_thread = threading.Thread(target=BroadcastClient, args=(node, mail))
+                broadcast_thread.start()
 
 
 # Logic for connecting to other nodes on the BlockMail network.
@@ -260,54 +280,32 @@ class SyncClient():
             blockchain_file.close()
 
 
-class BlockClient():
+class BroadcastClient():
 
-    def __init__(self, host):
+    def __init__(self, host, mail):
         self.__host = host
-        self.__port = BLOCK_PORT
-        self.__timeout = 5
+        self.__port = BROADCAST_PORT
+        self.__mail = mail
         self.establishSocket()
 
     def establishSocket(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # Open a new socket, s.
             try:
                 s.connect((self.__host, self.__port))  # Attempt to establish connection at given host and port.
-                self.broadcastBlock(s)
+                self.broadcastTransaction(s)
             except ConnectionRefusedError:
-                self.__timeout -= 1
-                print(f"[BLOCK] {self.__host} - Connection refused (node may be offline). Retrying in 10 seconds...")
+                print(f"[BROADCAST] {self.__host} - Connection refused (node may be offline). Retrying in 10 seconds...")
                 time.sleep(10)  # Wait for 10 seconds
-                if self.__timeout == 0:
-                    print(f"[BLOCK] Connection to {self.__host} timed out.")
-                    exit()
                 self.establishSocket()  # Retry
 
-    def broadcastBlock(self, s):
-        while True:
-            if Time.block_created.isSet():
-                if os.path.exists(f"blocks/{Block.current_block_name}.block") and Block.current_block_name != "":
-                    data = eval(open(f"blocks/{Block.current_block_name}.block").read())
-                    json_data = json.dumps(data)
-                    file_size = hex(len(json_data))
-                    print(f"[BLOCK] Broadcasting block ({Block.current_block_name})...")
-                    s.sendall(bytes(file_size + json_data, encoding="UTF8"))
-                time.sleep(1)  # Ensure only one broadcast / block creation
-            time.sleep(0.2)
+    def broadcastTransaction(self, s):
+        file_size = hex(len(self.__mail))
+        print(f"[BROADCAST] Broadcasting Email...")
+        s.sendall(bytes(file_size + json.dumps(self.__mail), encoding="UTF8"))
 
 
 class Time(threading.Thread):
     block_created = threading.Event()
-
-    @staticmethod
-    def getLocalTime():
-        return datetime.datetime.now()
-
-    @staticmethod
-    def blockCycleDue():
-        local_time = Time.getLocalTime()
-        if not local_time.second % 20 == 0:
-            return False
-        return True
 
     def __init__(self):
         super(Time, self).__init__()
@@ -328,57 +326,57 @@ class Time(threading.Thread):
             local_time.day or ntp_time.hour != local_time.hour or abs(local_time.second-ntp_time.second) >= 5
         ):
             print("[TIME] This machine's time is too inaccurate. Please resynchronise with an NTP server and restart the client.")
+            input("\nPress any key to exit...")
             os._exit(0)
 
     def blockTimer(self):
         Time.block_created.clear()
-        local_time = Time.getLocalTime()
-        if local_time.second % 20 == 0:
+        local_time = datetime.datetime.now()
+        if local_time.second % 10 == 0 and SyncServer.readyToCreateBlocks():
             Block()
             Time.block_created.set()
             time.sleep(1)
         time.sleep(0.2)
 
 
-class Block():  # gets to the point when syncing on node 3 where blockchain is overwritten.
+class Block():
     current_block_name = ""
 
     def __init__(self):
-        self.makeDirectory()
         self.newBlock()
-
-    def makeDirectory(self):
-        if not os.path.exists("blocks"):
-            os.mkdir("blocks")
+        self.writePrevBlockToChain()
 
     def newBlock(self):
-        all_blocks_dict = {}
-        all_blocks = self.getAllBlocks()
-        if len(all_blocks) != 0:
-            all_blocks_dict = eval(all_blocks)
-        block_id = f"b{len(all_blocks_dict)}"
-        Block.current_block_name = block_id
-        if not os.path.exists(f"blocks/{block_id}.block"):
-            print(f"[BLOCK] New block ({block_id}) started.")
-            self.__file = open(f"blocks/{block_id}.block", "w+")
-            data_to_write = {"block": block_id, "node": f"{SERVER_IP}: {DISCOVERY_PORT}"}
+        new_block_name = self.getNewBlockName()
+        Block.current_block_name = new_block_name
+        print(new_block_name)
+        if not os.path.exists(f"blocks/{new_block_name}.block"):
+            print(f"[BLOCK] New block ({new_block_name}) started.")
+            self.__file = open(f"blocks/{new_block_name}.block", "w+")
+            data_to_write = {"block": new_block_name, "mail": []}
             json.dump(data_to_write, self.__file)
-            self.writeToAllBlocks(block_id, data_to_write)
 
-    def getAllBlocks(self):
-        all_blocks = {}
-        if os.path.exists("blocks/blockchain.chain"):
-            all_blocks = open(f"blocks/blockchain.chain", "r").read()
-        return all_blocks
+    def getNewBlockName(self):
+        blockchain_file = json.load(open("blocks/blockchain.chain", "r"))
+        block_name = f"b{str(len(blockchain_file) + 1)}"
+        if len(blockchain_file) != 0:
+            return block_name
+        if Block.current_block_name == "b0":
+            return "b1"
+        return "b0"
 
-    def writeToAllBlocks(self, block_id, data):
-        all_blocks = self.getAllBlocks()
-        all_blocks_dict = {}
-        if len(all_blocks) != 0:
-            all_blocks_dict = eval(all_blocks)
-        all_blocks_dict[block_id] = data
-        all_blocks = open(f"blocks/blockchain.chain", "w")
-        json.dump(all_blocks_dict, all_blocks)
+    def writePrevBlockToChain(self):
+        if not Block.current_block_name in ["", "b0"]:
+            block_to_write = f"b{str(int(Block.current_block_name[1:])-1)}"
+            if os.path.exists(f"blocks/{block_to_write}.block"):
+                blockchain_file = open("blocks/blockchain.chain", "r+b")
+                prev_block_file = eval(open(f"blocks/{block_to_write}.block").read())
+                blockchain_file.seek(-1, 2)
+                if block_to_write == "b0":
+                    blockchain_file.write(bytes(f'"{block_to_write}" : {json.dumps(prev_block_file)}' + "}", encoding="UTF8"))
+                else:
+                    blockchain_file.write(bytes(f', "{block_to_write}" : {json.dumps(prev_block_file)}' + "}", encoding="UTF8"))
+                blockchain_file.close()
 
 
 class MailServer:
@@ -396,6 +394,7 @@ class MailServer:
 
     async def establishSocket(self, websocket, path):
         data = await websocket.recv()  # Wait to receive data from client.
+        print(data)
         try:
             data_json = json.loads(data)
         except:
@@ -403,24 +402,53 @@ class MailServer:
         if data_json["action"] == "GET":
             print(f"{self.__host}:{self.__port} ({data_json['body']}) requested mail...")
         elif data_json["action"] == "SEND":
-            Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject"], data_json["body"])
+            new_mail_thread = Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject"], data_json["body"])
+            new_mail_thread.start()
         else:
             print("[MAIL] Invalid data stream received.")
         await websocket.send("Successfully Connected. Welcome to the BlockMail network!")  # When received, send message back to client.
 
+    def searchBlockchain(self, websocket, address):  # Need to work on
+        email_dict = {}
+        for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
+            if prefix == "send_addr" and value == address:
+                return value
 
-class Mail:
+
+class Mail(threading.Thread):
 
     def __init__(self, send_addr, recv_addr, subject, body):
+        super(Mail, self).__init__()
         self.__send_addr = send_addr
         self.__recv_addr = recv_addr
         self.__subject = subject
         self.__body = body
         self.__date_time = datetime.datetime.now()
+
+    def run(self):
         self.newMail()
 
     def newMail(self):
-        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject   : {self.__subject}\nBody      : {self.__body}\nDate/Time : {self.__date_time}")
+        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject   : {self.__subject}\nBody      : {self.__body}\nDate/Time : {self.__date_time}\nOrigin    :{SERVER_IP}")
+        mail_json = {
+            "send_addr": self.__send_addr,
+            "recv_addr": self.__recv_addr,
+            "subject": self.__subject,
+            "body": self.__body,
+            "datetime": str(self.__date_time),
+            "origin_node": SERVER_IP
+        }
+        block_num = Block.current_block_name
+        print(f"[BROADCAST] Adding Email to Current Block ({block_num})...")
+        block_read_in = eval(open(f"blocks/{block_num}.block").read())
+        block_read_in["mail"].append(mail_json)
+        block_file = open(f"blocks/{block_num}.block", "w")
+        json.dump(block_read_in, block_file)
+        block_file.close()
+        print("[BROADCAST] Block Successfully Updated!")
+        for node in CONNECTED_KNOWN_NODES:
+            broadcast_thread = threading.Thread(target=BroadcastClient, args=(node, mail_json))
+            broadcast_thread.start()
 
 
 if __name__ == "__main__":
@@ -429,6 +457,15 @@ if __name__ == "__main__":
         print(f"*** STARTING MASTER NODE: {SERVER_IP} ***\n")
     else:
         print(f"*** STARTING NODE: {SERVER_IP} ***\n")
+    # Setup directories
+    if not os.path.exists("blocks"):
+        os.mkdir("blocks")
+    if not os.path.exists("temp"):
+        os.mkdir("temp")
+    if not os.path.exists("blocks/blockchain.chain"):
+        new_blockchain = open("blocks/blockchain.chain", "w+")
+        new_blockchain.write("{}")
+        new_blockchain.close()
     time_thread = Time()
     time_thread.start()
     for node in MASTER_NODES:
@@ -437,7 +474,7 @@ if __name__ == "__main__":
             discovery_client_thread.start()
     discovery_server_thread = Server("DISCOVERY", DISCOVERY_PORT)
     sync_server_thread = Server("BLOCKCHAIN", SYNC_PORT)
-    block_server_thread = Server("BLOCK", BLOCK_PORT)
+    block_server_thread = Server("BROADCAST", BROADCAST_PORT)
     discovery_server_thread.start()
     sync_server_thread.start()
     block_server_thread.start()
