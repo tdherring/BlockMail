@@ -24,11 +24,10 @@ CONNECTED_KNOWN_NODES = []
 RECV_SIZE = 256  # The size of the receive buffer on other nodes. DO NOT CHANGE.
 SERVER_IP = "127.0.0.1"
 
-
 class Server(threading.Thread):
     """Controls communication between nodes on the BlockMail network along with NodeClient.
     Discovers neighbouring nodes.\n
-    Takes two arguments:
+    Arguments:
         host - IP to host server on.
         port - Port to host server on. """
 
@@ -63,6 +62,12 @@ class Server(threading.Thread):
 
 
 class ServerConnection(threading.Thread):
+    """ Threaded. Manages data from other nodes and writes it to files. \n
+        Arguments: \n
+            connection - Socket, the controller for the connections established from other nodes. 
+            address - Socket, '' ''
+            server_type - String, Tells this class where to direct the data. """
+
     def __init__(self, connection, address, server_type):
         super(ServerConnection, self).__init__()
         self.__connection = connection
@@ -78,12 +83,12 @@ class ServerConnection(threading.Thread):
             if data:
                 if self.__expected_size == -1:  # Expecting new data stream?
                     hex_length = decoded_data.split("{")[0]
+                    print(decoded_data)
                     self.__expected_size = int(hex_length, 16)  # Convert hex to integer.
                     self.__expected_size_counter = self.__expected_size
                     decoded_data = decoded_data[len(hex_length):]  # Cut size off front
-                self.createTempFile()
+                    self.createTempFile()
                 print(f"[{self.__server_type}] Connection Received... Expecting {self.__expected_size_counter} more bytes of data...")
-                print(decoded_data)
                 self.processIncomingData(decoded_data)  # Store incoming data in file.
                 if self.__expected_size_counter > RECV_SIZE:
                     self.__expected_size_counter -= RECV_SIZE
@@ -117,6 +122,9 @@ class ServerConnection(threading.Thread):
 
 
 class DiscoverySever():
+    """ Waits for incoming connection from DiscoveryClient() on other nodes. \n
+        Arguments: \n
+            tmp_file_name - String, passed from ServerConnection() class. Contains temp file name holding connected node information. """
 
     def __init__(self, tmp_file_name):
         self.__tmp_file_name = tmp_file_name
@@ -128,7 +136,6 @@ class DiscoverySever():
         if json_data["origin_host"] not in CONNECTED_KNOWN_NODES:
             CONNECTED_KNOWN_NODES.append(json_data['origin_host'])
         print(f"[DISCOVERY] {json_data['origin_host']} - Peer Connected.")
-        self.initBlockchainSync(json_data['origin_host'])
         if SERVER_IP in MASTER_NODES:
             self.populateNodesOnNetworkMasters(json_data)  # Populate NODES_ON_NETWORK on initial node connection to Master Nodes.
         self.populateNodesOnNetwork(json_data)
@@ -158,21 +165,21 @@ class DiscoverySever():
             KNOWN_NODES.append(node)  # Add node to known nodes.
             print(f"[DISCOVERY] New Neighbour Found! Neighbouring Nodes: {KNOWN_NODES}")
             discovery_client_thread = threading.Thread(target=DiscoveryClient, args=(node,))
-            sync_client_thread = threading.Thread(target=SyncClient, args=(node,))
             discovery_client_thread.start()
-            sync_client_thread.start()
-
-    def initBlockchainSync(self, host):
-        threading.Thread(target=SyncClient, args=(host,))
-
 
 class SyncServer():
-    num_synced = 1  # Keep track of number of blockchains received and synced from other nodes.
+    """ Waits for incoming connection from SyncClient() on other nodes. \n
+        Arguments: \n
+            tmp_file_name - String, passed from ServerConnection() class. Contains temp file name holding up to date blockchain. """
+
+
+    num_synced = 0  # Keep track of number of blockchains received and synced from other nodes.
 
     @staticmethod
     def readyToCreateBlocks():
-        print(CONNECTED_KNOWN_NODES, SyncServer.num_synced)
-        return SyncServer.num_synced >= len(CONNECTED_KNOWN_NODES)
+        while not SyncServer.num_synced >= len(CONNECTED_KNOWN_NODES):
+            return False
+        return True
 
     def __init__(self, tmp_file_name):
         self.__tmp_file_name = tmp_file_name
@@ -184,19 +191,25 @@ class SyncServer():
             if os.stat(self.__tmp_file_name).st_size > os.stat("blocks/blockchain.chain").st_size:
                 print("[BLOCKCHAIN] Updating Blockchain...")
                 shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
+                Block(True)
                 print("[BLOCKCHAIN] Blockchain Successfully Updated!")
-                SyncServer.num_synced += 1
             else:
                 print("[BLOCKCHAIN] Received the Same or Outdated Blockchain. No Changes Made.")
-                SyncServer.num_synced += 1
+            SyncServer.num_synced += 1
         else:
             print("[BLOCKCHAIN] Synchronising Blockchain...")
             shutil.copy(self.__tmp_file_name, "blocks/blockchain.chain")
-            print("[BLOCKCHAIN] Blockchain Successfully Synchronised!")
+            Block(True)
+            print("[BLOCKCHAIN] Blockchain Successfully Synchronised!")#
             SyncServer.num_synced += 1
 
 
 class BroadcastServer():
+    """ Waits for incoming emails from other nodes.
+        Stores email in current block, and propogates the email further throughout the BlockMail network. \n
+        Arguments: \n
+            tmp_file_name - String, passed from ServerConnection() class. Contains temp file name holding Email info. """
+
     def __init__(self, tmp_file_name):
         self.__tmp_file_name = tmp_file_name
         print("[BROADCAST] Block Server Started!")
@@ -207,7 +220,6 @@ class BroadcastServer():
         print("[BROADCAST] New Email Received, Updating...")
         block_read_in = eval(open(f"blocks/{block_num}.block").read())
         temp_mail_file = eval(open(f"{self.__tmp_file_name}", "r").read())
-        print(temp_mail_file)
         block_read_in["mail"].append(temp_mail_file)
         block_file = open(f"blocks/{block_num}.block", "w")
         json.dump(block_read_in, block_file)
@@ -228,6 +240,10 @@ class BroadcastServer():
 # inheritance. A better solution would have been to have a superclass as with Server.
 
 class DiscoveryClient():
+    """ Connects to a DiscoveryServer on antoher node. Distributes node information to other nodes. 
+        Instantiated on new connection from another node. \n
+        Arguments:
+            host - String, contains the node IP to conect to. """
 
     def __init__(self, host):
         self.__host = host
@@ -255,6 +271,11 @@ class DiscoveryClient():
 
 
 class SyncClient():
+    """ Connects to a SyncServer on another node. Sends the current blockchain to another node.
+        Instantiated upon new connection from another node (at closest future block interval). Called from Block(). \n
+        Arguments:
+            host - String, contains the node IP to conect to."""
+
     def __init__(self, host):
         self.__host = host
         self.__port = SYNC_PORT
@@ -279,8 +300,12 @@ class SyncClient():
             s.sendall(bytes(file_size + read_file, encoding="UTF8"))
             blockchain_file.close()
 
-
 class BroadcastClient():
+    """ Connects to a BroadcastServer on another node. Distributes Mail throughout network.
+        Instantiated upon new email receipt from frontend. \n
+        Arguments:
+            host - String, contains the node IP to conect to.
+            mail - String, the mail data to broadcast."""
 
     def __init__(self, host, mail):
         self.__host = host
@@ -305,6 +330,9 @@ class BroadcastClient():
 
 
 class Time(threading.Thread):
+    """ Checks the local time against NTP server. Will not allow to run if too out of sync.
+        Also periodically dispenses a new block. """
+
     block_created = threading.Event()
 
     def __init__(self):
@@ -332,24 +360,28 @@ class Time(threading.Thread):
     def blockTimer(self):
         Time.block_created.clear()
         local_time = datetime.datetime.now()
-        if local_time.second % 10 == 0 and SyncServer.readyToCreateBlocks():
-            Block()
+        if local_time.second % 10 == 0:
+            Block(False)
             Time.block_created.set()
             time.sleep(1)
         time.sleep(0.2)
 
-
 class Block():
-    current_block_name = ""
+    """ Generates blocks at interval. \n
+        sync - Boolean, is this the initial block after sync?"""
 
-    def __init__(self):
+    current_block_name = ""
+    already_synced = []
+
+    def __init__(self, sync):
+        self.__sync = sync
         self.newBlock()
         self.writePrevBlockToChain()
+        self.initBlockchainSync()
 
     def newBlock(self):
         new_block_name = self.getNewBlockName()
         Block.current_block_name = new_block_name
-        print(new_block_name)
         if not os.path.exists(f"blocks/{new_block_name}.block"):
             print(f"[BLOCK] New block ({new_block_name}) started.")
             self.__file = open(f"blocks/{new_block_name}.block", "w+")
@@ -358,12 +390,13 @@ class Block():
 
     def getNewBlockName(self):
         blockchain_file = json.load(open("blocks/blockchain.chain", "r"))
-        block_name = f"b{str(len(blockchain_file) + 1)}"
-        if len(blockchain_file) != 0:
-            return block_name
-        if Block.current_block_name == "b0":
-            return "b1"
-        return "b0"
+        if self.__sync:
+            block_name = f"b{str(len(blockchain_file))}"
+        else:
+            block_name = f"b{str(len(blockchain_file) + 1)}"
+        if Block.current_block_name == "" and block_name == "b1":
+            return "b0"
+        return block_name
 
     def writePrevBlockToChain(self):
         if not Block.current_block_name in ["", "b0"]:
@@ -377,12 +410,21 @@ class Block():
                 else:
                     blockchain_file.write(bytes(f', "{block_to_write}" : {json.dumps(prev_block_file)}' + "}", encoding="UTF8"))
                 blockchain_file.close()
+                
+
+    def initBlockchainSync(self):
+        for node in CONNECTED_KNOWN_NODES:
+            if node not in Block.already_synced:
+                sync_client_thread = threading.Thread(target=SyncClient, args=(node,))
+                sync_client_thread.start()
+                Block.already_synced.append(node)
 
 
 class MailServer:
-    """Listens for incoming mail requests (web page at /mail.html).
-        host - IP of node to connect to.
-        port - Port of node to connect to."""
+    """ Listens for incoming mail requests (web page at /mail.html). \n
+        Arguments: \n
+            host - IP of node to connect to.
+            port - Port of node to connect to."""
 
     def __init__(self, host=SERVER_IP, port=MAIL_PORT):
         self.__host = host
@@ -416,6 +458,12 @@ class MailServer:
 
 
 class Mail(threading.Thread):
+    """ Threaded. Takes an incoming email from MailServer(), formats it, and directs it to BroadcastClient() for distribution to other nodes on the network.\n
+        Arguments: \n
+            send_addr - Sender address of Mail.
+            recv_addr - Recipient address of Mail.
+            subject - Subject of Mail. 
+            body - Body of Mail. """
 
     def __init__(self, send_addr, recv_addr, subject, body):
         super(Mail, self).__init__()
@@ -452,6 +500,8 @@ class Mail(threading.Thread):
 
 
 if __name__ == "__main__":
+    """ Entry point from the program. Sets up and instantiates respective classes. """
+
     NODES_ON_NETWORK.extend(MASTER_NODES)  # Add all master nodes to NODES_ON_NETWORK to save processing later.
     if SERVER_IP in MASTER_NODES:
         print(f"*** STARTING MASTER NODE: {SERVER_IP} ***\n")
