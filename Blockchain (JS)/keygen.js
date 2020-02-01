@@ -6,8 +6,9 @@ const ECDSA_KEY_PAIR = EC_INSTANCE.genKeyPair();
 const ECDSA_PUBLIC_KEY = ECDSA_KEY_PAIR.getPublic("hex");
 const ECDSA_PRIVATE_KEY = ECDSA_KEY_PAIR.getPrivate("hex");
 
-const RSA_KEY = new NODE_RSA({b: 2048});
-const RSA_KEY2 = new NODE_RSA({b: 2048});
+const RSA_KEY = new NODE_RSA({
+    b: 2048
+});
 
 console.log("ECDSA Public Key: " + ECDSA_PUBLIC_KEY);
 console.log("ECDSA Private Key: " + ECDSA_PRIVATE_KEY);
@@ -46,7 +47,9 @@ class Address {
     }
 
     generateRSAKeyPair() {
-        return new NODE_RSA({b: 2048});
+        return new NODE_RSA({
+            b: 2048
+        });
     }
 
     getRSAPublicKey() {
