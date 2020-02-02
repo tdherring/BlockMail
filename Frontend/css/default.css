@@ -58,6 +58,7 @@ body {
 	min-height: 100vh;
 	flex-direction: column;
 	justify-content: space-between;
+	background-color: #f9f9f9;
 }
 
 .wrapper {
@@ -77,7 +78,8 @@ body {
 footer {
 	width: 100%;
 	padding: 0 7vw 0 7vw;
-	background-color: #f79714;
+	background-color: #343a40;
+	color: #f9f9f9;
 }
 
 /* HOME */

@@ -360,7 +360,7 @@ class Time(threading.Thread):
     def blockTimer(self):
         Time.block_created.clear()
         local_time = datetime.datetime.now()
-        if local_time.second % 10 == 0:
+        if local_time.second % 30 == 0:
             Block(False)
             Time.block_created.set()
             time.sleep(1)
@@ -436,25 +436,56 @@ class MailServer:
 
     async def establishSocket(self, websocket, path):
         data = await websocket.recv()  # Wait to receive data from client.
-        print(data)
         try:
             data_json = json.loads(data)
         except:
             print("[MAIL] Invalid data stream received. Not a JSON.")
         if data_json["action"] == "GET":
-            print(f"{self.__host}:{self.__port} ({data_json['body']}) requested mail...")
+            print(f"{self.__host}:{self.__port} ({data_json['wallet_public']}) requested mail...")
+            reply = json.dumps(self.searchBlockchain(data_json["wallet_public"]))
         elif data_json["action"] == "SEND":
             new_mail_thread = Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject"], data_json["body"])
             new_mail_thread.start()
+            reply = "Email Sent!"
+        elif data_json["action"] == "KEY":
+            reply = json.dumps(self.getPublicKey(data_json["recv_addr"]))
         else:
             print("[MAIL] Invalid data stream received.")
-        await websocket.send("Successfully Connected. Welcome to the BlockMail network!")  # When received, send message back to client.
+        await websocket.send(reply) # When received, send message back to client.
 
-    def searchBlockchain(self, websocket, address):  # Need to work on
-        email_dict = {}
+    def searchBlockchain(self, address): 
+        all_emails = []
+        fetching_email = False
+        current_email = {}
         for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
-            if prefix == "send_addr" and value == address:
-                return value
+            if prefix.endswith("send_addr") or prefix.endswith("recv_addr") and value == address:
+                fetching_email = True
+            if fetching_email:
+                if prefix.endswith("send_addr"):
+                    current_email["send_addr"] = value
+                elif prefix.endswith("recv_addr"):
+                    current_email["recv_addr"] = value
+                elif prefix.endswith("subject"):
+                    current_email["subject"] = value
+                elif prefix.endswith("body"):
+                    current_email["body"] = value
+                elif prefix.endswith("datetime"):
+                    current_email["datetime"] = value
+                elif prefix.endswith("origin"):
+                    current_email["origin"] = value
+                    all_emails.append(current_email)
+                    current_email = {}
+                    fetching_email = False
+        return {"emails" : all_emails }
+
+    def getPublicKey(self, recv_address):
+        fetching_key = False
+        for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
+            if prefix.endswith("send_addr") and value == recv_address:
+                fetching_key = True
+            if fetching_key and prefix.endswith("body"):
+                fetching_key = False
+                return {"key" : value}
 
 
 class Mail(threading.Thread):
