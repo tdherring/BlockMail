@@ -10,7 +10,7 @@
 	margin-left: 7vw;
 }
 
-@media only screen and (max-width: 1220px) {
+@media only screen and (max-width: 1300px) {
 	#logo {
 		width: 175px !important;
 	}
@@ -33,6 +33,7 @@
 .navbar-nav {
 	margin-right: 7vw;
 	text-align: right;
+	white-space: nowrap
 }
 
 .navbar-toggler {
@@ -43,8 +44,6 @@
 @media only screen and (min-width: 992px) {
 	.navbar-nav {
 		padding-top: 1.5em;
-		right: 0;
-		position: absolute;
 	}
 
 	.nav-item {
@@ -168,4 +167,14 @@ textarea {
 	height: 47px;
 	vertical-align: middle;
 	color: black !important;
+}
+
+/* CREATE ACCOUNT */
+
+h6 {
+	padding: 1vh 0 1vh 0;
+}
+
+.download-btn {
+	margin: 1vh 0 1vh 0;
 }

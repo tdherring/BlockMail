@@ -13,13 +13,13 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light">
+    <nav class="navbar navbar-expand-xl navbar-light">
         <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-            <div class="navbar-nav">
+            <div class="navbar-nav ml-auto">
                 <a class="nav-item nav-link" href="index.html">Home</a>
                 <a class="nav-item nav-link active" href="login.html">Login</a>
                 <a class="nav-item nav-link" href="create-account.html">Create Account</a>
@@ -38,21 +38,21 @@
                         <h5 class="card-title text-center">Sign In</h5>
                         <form class="form-signin" id="login-box">
                             <div class="form-label-group">
-                                <input type="text" id="ecdsa-public" class="form-control" placeholder="ECDSA Public Key" autofocus></input>
+                                <input type="text" id="ecdsa-public" class="form-control" placeholder="Wallet Address" autofocus></input>
                             </div>
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
-                                <label id="ecdsa-public-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-public-file">Select ECDSA Public Key File</label>
+                                <label id="ecdsa-public-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-public-file">Select wallet.addr File</label>
                                 <input type="file" id="ecdsa-public-file" class="hidden" accept=".key"></input>
                                 <label id="clear-public-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-public">Clear</label>
                                 <input type="button" id="clear-public" class="hidden" onclick="clearFile(true)"></input>
                             </div>
                             <div class="form-label-group">
-                                <input type="password" id="ecdsa-private" class="form-control" placeholder="ECDSA Private Key"></input>
+                                <input type="password" id="ecdsa-private" class="form-control" placeholder="Wallet Password"></input>
                             </div>
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
-                                <label id="ecdsa-private-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-private-file">Select ECDSA Private Key File</label>
+                                <label id="ecdsa-private-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-private-file">Select wallet.pass File</label>
                                 <input type="file" id="ecdsa-private-file" class="hidden" accept=".key"></input>
                                 <label id="clear-private-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-private">Clear</label>
                                 <input type="button" id="clear-private" class="hidden" onclick="clearFile(false)"></input>
@@ -84,7 +84,7 @@
             </div>
             <hr class="clearfix" />
         </div>
-        <div class="footer-copyright text-center py-3">© BlockMail 2019</div>
+        <div class="footer-copyright text-center py-3">© BlockMail 2019/20</div>
     </footer>
 
     <!-- JQuery and Bootstrap Import -->

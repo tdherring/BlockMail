@@ -13,13 +13,13 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light">
+    <nav class="navbar navbar-expand-xl navbar-light">
         <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-            <div class="navbar-nav">
+            <div class="navbar-nav ml-auto">
                 <a class="nav-item nav-link" href="index.html">Home</a>
                 <a class="nav-item nav-link" href="login.html">Login</a>
                 <a class="nav-item nav-link active" href="create-account.html">Create Account</a>
@@ -35,8 +35,13 @@
             <div class="col-sm-12 col-md-12 col-lg-8 mx-auto">
                 <div class="card card-signin my-5">
                     <div class="card-body">
-                        <h5 class="card-title text-center">Create Account</h5>
+                        <h5 class=" card-title text-center">Create Account</h5>
+                        Pressing the "Generate Keys" button below will create three keys required to use BlockMail: Wallet Address (wallet.addr), Wallet Password (walled.pass), and Mail Decryption Key (private.key). This may take from a few seconds to a minute; please be patient.<br>
+                        If you can't save them using the "Download" buttons,
+                        copy them into files and save them.<br><br>
+                        <b>NOTE</b>: If you lose these keys, it is <em>IMPOSSIBLE</em> to recover them, so keep them somewhere safe and have them backed up! <br><br>
                         <input type="button" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" id="gen-keys-btn" value="Generate Keys"></input>
+                        <div id="keys"> </div>
                     </div>
                 </div>
             </div>
@@ -62,7 +67,7 @@
             </div>
             <hr class="clearfix" />
         </div>
-        <div class="footer-copyright text-center py-3">© BlockMail 2019</div>
+        <div class="footer-copyright text-center py-3">© BlockMail 2019/20</div>
     </footer>
 
     <!-- JQuery and Bootstrap Import -->
@@ -73,6 +78,7 @@
     <!-- My JavaScript Import -->
     <script src="js/modules/elliptic.js"></script>
     <script src="js/modules/node-rsa.js"></script>
+    <script src="js/modules/FileSaver.js"></script>
     <script src="js/gen-keys.js"></script>
 
 </body>
