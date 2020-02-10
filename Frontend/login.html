@@ -15,18 +15,18 @@
 <body>
     <nav class="navbar navbar-expand-xl navbar-light">
         <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="collapse navbar-collapse" id="menu">
             <div class="navbar-nav ml-auto">
-                <a class="nav-item nav-link" href="index.html">Home</a>
-                <a class="nav-item nav-link active" href="login.html">Login</a>
-                <a class="nav-item nav-link" href="create-account.html">Create Account</a>
-                <a class="nav-item nav-link" href="about-us.html">About Us</a>
-                <a class="nav-item nav-link" href="become-a-node.html">Become a Node</a>
-                <a class="nav-item nav-link" href="mail.html">Mail</a>
-                <a class="nav-item nav-link" href="contact-us.html">Contact Us</a>
+                <a class="nav-item nav-link" id="index-link" href="index.html">Home</a>
+                <a class="nav-item nav-link active" id="login-link" href="login.html">Login</a>
+                <a class="nav-item nav-link" id="create-acc-link" href="create-account.html">Create Account</a>
+                <a class="nav-item nav-link" id="about-us-link" href="about-us.html">About Us</a>
+                <a class="nav-item nav-link" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
+                <a class="nav-item nav-link" id="mail-link" href="mail.html">Mail</a>
+                <a class="nav-item nav-link" id="contact-us-link" href="contact-us.html">Contact Us</a>
             </div>
         </div>
     </nav>
@@ -43,9 +43,8 @@
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
                                 <label id="ecdsa-public-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-public-file">Select wallet.addr File</label>
-                                <input type="file" id="ecdsa-public-file" class="hidden" accept=".key"></input>
-                                <label id="clear-public-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-public">Clear</label>
-                                <input type="button" id="clear-public" class="hidden" onclick="clearFile(true)"></input>
+                                <input type="file" id="ecdsa-public-file" class="hidden" accept=".addr"></input>
+                                <input type="button" id="clear-public" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase hidden" onclick="clearFile(true)" value="Clear"></input>
                             </div>
                             <div class="form-label-group">
                                 <input type="password" id="ecdsa-private" class="form-control" placeholder="Wallet Password"></input>
@@ -53,12 +52,13 @@
                             <h5 class="text-center">- Or -</h5>
                             <div class="form-label-group">
                                 <label id="ecdsa-private-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="ecdsa-private-file">Select wallet.pass File</label>
-                                <input type="file" id="ecdsa-private-file" class="hidden" accept=".key"></input>
-                                <label id="clear-private-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="clear-private">Clear</label>
-                                <input type="button" id="clear-private" class="hidden" onclick="clearFile(false)"></input>
+                                <input type="file" id="ecdsa-private-file" class="hidden" accept=".pass"></input>
+                                <input type="button" id="clear-private" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase hidden" onclick="clearFile(false)" value="Clear"></input>
                             </div>
                         </form>
                         <button id="auth-btn" class="btn btn-lg btn-primary btn-block text-uppercase">Authenticate</button>
+                        <hr>
+                        <h5>Don't have an Account? <a href="create-account.html">Create One</a>.</h5>
                     </div>
                 </div>
             </div>
@@ -94,8 +94,9 @@
 
     <!-- My JavaScript Import -->
     <script src="js/modules/elliptic.js"></script>
+    <script src="js/getCookie.js"></script>
+    <script src="js/checkLoggedIn.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/upload-keys.js"></script>
 
 </body>
 

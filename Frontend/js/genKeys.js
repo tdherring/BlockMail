@@ -11,13 +11,14 @@ $("#gen-keys-btn").click(function () {
 });
 
 function writeToBlockchain(address, rsa_public_key, ecdsa_public_key) {
-    console.log("xxx");
     let key_obj = {
         "action": "SEND",
         "send_addr": ecdsa_public_key,
         "recv_addr": "0x0",
-        "subject": "**RSA-PUBLIC**",
-        "body": rsa_public_key,
+        "subject_sender": "**RSA-PUBLIC**",
+        "subject_receiver": "",
+        "body_sender": rsa_public_key,
+        "body_receiver": ""
     }
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {

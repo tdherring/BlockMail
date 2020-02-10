@@ -7,7 +7,7 @@
 /* MENU */
 
 #logo {
-	margin-left: 7vw;
+	margin-left: 6vw;
 }
 
 @media only screen and (max-width: 1300px) {
@@ -31,13 +31,13 @@
 }
 
 .navbar-nav {
-	margin-right: 7vw;
+	margin-right: 6vw;
 	text-align: right;
 	white-space: nowrap
 }
 
 .navbar-toggler {
-	margin-right: 7vw;
+	margin-right: 6vw;
 	margin-top: 1vh;
 }
 
@@ -77,7 +77,7 @@ body {
 
 footer {
 	width: 100%;
-	padding: 0 7vw 0 7vw;
+	padding: 0 6vw 0 6vw;
 	background-color: #343a40;
 	color: #f9f9f9;
 }
@@ -114,33 +114,53 @@ label {
 }
 
 .form-signin * {
-	padding-bottom: 1vh;
+	margin-bottom: 1vh;
 }
 
 .alert {
 	margin: 1vh 0 0 0;
 }
 
-#clear-public-label,
-#clear-private-label {
-	display: none;
-}
-
 /* EMAIL */
 
-.email-table {
+.table-bordered td {
+	height: 157.5px;
+}
+
+
+
+#email-table {
 	text-align: left;
 }
 
-.email-table a {
+#email-table a {
 	color: black;
 }
 
 .container-fluid {
-	padding: 0 7vw 0 7vw;
+	padding: 0 6vw 0 6vw;
 }
 
-.new-email-btn {
+@media only screen and (max-width: 1290px) {
+	.container-fluid {
+		padding: 0;
+	}
+
+	#logo {
+		margin-left: 0;
+	}
+
+	.navbar-nav, .navbar-toggler {
+		margin-right: 0;
+	}
+
+	.wrapper {
+		padding: 15px;
+	}
+
+}
+
+#compose-btn {
 	margin-bottom: 10px;
 }
 
@@ -152,15 +172,10 @@ textarea {
 	margin-top: 10px;
 }
 
-.send-email-form *:focus,
+#send-email-form *:focus,
 .pagination li *:focus {
 	box-shadow: none !important;
-	border: 1px solid black !important;
-}
-
-.send-email-form input[type=text] {
-	margin-bottom: 10px;
-
+	border: 1px solid darkgray !important;
 }
 
 .page-link {
@@ -169,6 +184,68 @@ textarea {
 	height: 47px;
 	vertical-align: middle;
 	color: black !important;
+}
+
+#mail-view {
+	white-space:normal !important;
+	word-wrap: break-word; 
+}
+
+#send-email-form textarea {
+	margin-bottom: 10px ;
+}
+
+#send-email-form input[type="text"], textarea {
+	background-color: #f9f9f9 !important;
+	border: 0;
+	border-bottom: 1px solid darkgray;
+	border-radius: 0 !important;
+}
+
+#send-email-form input[type="text"]:focus ,textarea:focus {
+	border: 0 !important;
+	border-bottom: 1px solid darkgray !important;
+}
+
+textarea {
+	border: 1px solid darkgray !important;
+}
+
+#mail-placeholder {
+	margin: auto;
+}
+
+#mail-placeholder img {
+	opacity: 0.4;
+	width: 100px;
+	height: auto;
+	filter: grayscale(100%);
+	padding-bottom: 1vh;
+}
+
+#email-outer-col {
+	white-space: normal !important;
+	word-wrap: break-word;
+}
+
+#email-outer-col, .send-read-email-area {	
+	padding-top: 5px;
+}
+
+.page-link:hover {
+	cursor: pointer;
+}
+
+.spinner-grow {
+	color: #f79714;
+}
+
+.spinner-grow-alt {
+	color: #343a40;
+}
+
+#decrypt-btn {
+	background-color: #f79714;
 }
 
 /* CREATE ACCOUNT */
@@ -180,3 +257,8 @@ h6 {
 .download-btn {
 	margin: 1vh 0 1vh 0;
 }
+
+textarea {
+	resize: none;
+}
+

@@ -16,142 +16,111 @@
     <nav class="navbar navbar-expand-xl navbar-light">
         <a class="navbar-brand" href="#"><img id="logo" src="images/logo_text.png" /></a>
 
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="collapse navbar-collapse" id="menu">
             <div class="navbar-nav ml-auto">
-                <a class="nav-item nav-link" href="index.html">Home</a>
-                <a class="nav-item nav-link" href="login.html">Login</a>
-                <a class="nav-item nav-link" href="create-account.html">Create Account</a>
-                <a class="nav-item nav-link" href="about-us.html">About Us</a>
-                <a class="nav-item nav-link" href="become-a-node.html">Become a Node</a>
-                <a class="nav-item nav-link active" href="mail.html">Mail</a>
-                <a class="nav-item nav-link" href="contact-us.html">Contact Us</a>
+                <a class="nav-item nav-link" id="index-link" href="index.html">Home</a>
+                <a class="nav-item nav-link" id="login-link" href="login.html">Login</a>
+                <a class="nav-item nav-link" id="create-acc-link" href="create-account.html">Create Account</a>
+                <a class="nav-item nav-link" id="about-us-link" href="about-us.html">About Us</a>
+                <a class="nav-item nav-link" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
+                <a class="nav-item nav-link active" id="mail-link" href="mail.html">Mail</a>
+                <a class="nav-item nav-link" id="contact-us-link" href="contact-us.html">Contact Us</a>
             </div>
         </div>
     </nav>
     <div class="wrapper">
-        <div class="container-fluid">
+
+        <div class="modal fade" id="decrypt-modal">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title ">Enter Mail Decryption Key</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="decrypt-form">
+                            <div class="form-label-group">
+                                <input type="text" id="private-key" class="form-control" placeholder="Mail Decryption Key" autofocus></input>
+                            </div>
+                            <h5 class="text-center" id="or-tag">- Or -</h5>
+                            <div class="form-label-group">
+                                <label id="private-key-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="private-key-file">Select private.key File</label>
+                                <input type="file" id="private-key-file" class="hidden" accept=".key"></input>
+                                <input type="button" id="clear-private" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase hidden" onclick="clearFile()" value="Clear"></input>
+                            </div>
+                            <hr />
+                            <button id="decrypt-confirm-btn" class="btn btn-lg btn-primary btn-block text-uppercase">Decrypt</button>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading">
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+        </div>
+        <div class="container-fluid hidden" id="mail-wrapper">
             <div class="row">
-                <div class="col-5">
-                    <input type="button" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase new-email-btn" value="+ New Email"></input>
-                    <table class="table table-sm table-striped table-bordered email-table">
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <a href="#">
-                                        <h4>SUBJECT</h4>
-                                        <h5>From: ADDRESS</h5>
-                                        <em>Lorem ipsum est...</em>
-                                    </a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="col-2">
+                    <input type="button" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" id="compose-btn" value="+ Compose"></input>
+                </div>
+                <div class="col-2">
+                    <input type="button" class="btn btn-lg btn-warning btn-primary btn-block text-uppercase" id="decrypt-btn" value="✓ Decrypt"></input>
+                </div>
+                <div class="col-4 hidden">
+                    <input type="button" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" id="back-btn" value="← Back"></input>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-5" id="email-outer-col">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-bordered">
+                            <tbody id="email-table">
+
+                            </tbody>
+                        </table>
+                    </div>
                     <nav>
                         <ul class="pagination justify-content-left">
-                            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
-                            <li class="page-item"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                            <li class="page-item" id="prev-page"><a class="page-link">Previous</a></li>
+                            <li class="page-item"><a class="page-link" id="page-num">1</a></li>
+                            <li class="page-item" id="next-page"><a class="page-link">Next</a></li>
                         </ul>
                     </nav>
                 </div>
+                <div class="col-7" id="mail-placeholder">
+                    <img src="images/logo.png" />
+                    <h4>Select Mail to View, or Compose a New Message</h4>
+                </div>
                 <div class="col-7 send-read-email-area">
-                    <h3>Send BlockMail</h3>
-                    <form class="send-email-form">
+                    <form id="send-email-form" class="hidden">
                         <input class="form-control form-control-md" id="to" type="text" placeholder="To">
                         <input class="form-control form-control-md" id="subject" type="text" placeholder="Subject">
-                        <textarea class="form-control" id="body" rows="37"></textarea>
-                        <hr class="clearfix" />
+                        <textarea class="form-control" id="body" rows="30"></textarea>
                         <input type="submit" class="btn btn-lg btn-primary btn-dark btn-block text-uppercase" value="Send"></input>
                     </form>
+                    <div id="mail-view" class="hidden">
+                        <h3 id="mail-view-subject"></h3>
+                        <h4 id="mail-view-from"></h4>
+                        <h5 id="mail-view-datetime"></h5>
+                        <hr />
+                        <p id="mail-view-body"></p>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
     <footer class="page-footer font-small pt-4">
@@ -179,6 +148,8 @@
 
     <!-- My JavaScript Import -->
     <script src="js/modules/node-rsa.js"></script>
+    <script src="js/getCookie.js"></script>
+    <script src="js/checkLoggedIn.js"></script>
     <script src="js/mail.js"></script>
 
 </body>

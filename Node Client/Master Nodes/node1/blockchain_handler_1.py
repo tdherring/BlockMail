@@ -444,11 +444,11 @@ class MailServer:
             print(f"{self.__host}:{self.__port} ({data_json['wallet_public']}) requested mail...")
             reply = json.dumps(self.searchBlockchain(data_json["wallet_public"]))
         elif data_json["action"] == "SEND":
-            new_mail_thread = Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject"], data_json["body"])
+            new_mail_thread = Mail(data_json["send_addr"], data_json["recv_addr"], data_json["subject_receiver"], data_json["subject_sender"], data_json["body_receiver"], data_json["body_sender"])
             new_mail_thread.start()
             reply = "Email Sent!"
         elif data_json["action"] == "KEY":
-            reply = json.dumps(self.getPublicKey(data_json["recv_addr"]))
+            reply = json.dumps(self.getPublicKeys(data_json["recv_addr"], data_json["send_addr"]))
         else:
             print("[MAIL] Invalid data stream received.")
         await websocket.send(reply) # When received, send message back to client.
@@ -457,35 +457,54 @@ class MailServer:
         all_emails = []
         fetching_email = False
         current_email = {}
+        send_addr = ""
         for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
-            if prefix.endswith("send_addr") or prefix.endswith("recv_addr") and value == address:
+            if prefix.endswith("send_addr"):
+                send_addr = value
+            if (prefix.endswith("send_addr") or prefix.endswith("recv_addr")) and value == address:
                 fetching_email = True
             if fetching_email:
-                if prefix.endswith("send_addr"):
-                    current_email["send_addr"] = value
-                elif prefix.endswith("recv_addr"):
+                current_email["send_addr"] = send_addr
+                if prefix.endswith("recv_addr"):
                     current_email["recv_addr"] = value
-                elif prefix.endswith("subject"):
+                elif prefix.endswith("subject_sender") and send_addr == address: #Requested by sender?
                     current_email["subject"] = value
-                elif prefix.endswith("body"):
+                elif prefix.endswith("subject_receiver") and send_addr != address: #Requested by receiver?
+                    current_email["subject"] = value
+                elif prefix.endswith("body_sender") and send_addr == address:
+                    current_email["body"] = value
+                elif prefix.endswith("body_receiver") and send_addr != address:
                     current_email["body"] = value
                 elif prefix.endswith("datetime"):
                     current_email["datetime"] = value
-                elif prefix.endswith("origin"):
-                    current_email["origin"] = value
-                    all_emails.append(current_email)
+                elif prefix.endswith("origin_node"):
+                    current_email["origin_node"] = value
+                    if not current_email["recv_addr"] == "0x0": # Don't append the initial key mail.
+                        all_emails.append(current_email)
                     current_email = {}
                     fetching_email = False
-        return {"emails" : all_emails }
+        return {"emails" : all_emails[::-1] }
 
-    def getPublicKey(self, recv_address):
-        fetching_key = False
+    def getPublicKeys(self, recv_address, send_address):
+        fetching_recv_key = False
+        fetching_send_key = False
+        num_fetched = 0
+        keys = {}
         for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
-            if prefix.endswith("send_addr") and value == recv_address:
-                fetching_key = True
-            if fetching_key and prefix.endswith("body"):
-                fetching_key = False
-                return {"key" : value}
+            if prefix.endswith("send_addr") and (value == recv_address):
+                fetching_recv_key = True
+            if fetching_recv_key and prefix.endswith("body_sender"):
+                fetching_recv_key = False
+                num_fetched+= 1
+                keys["recv_key"] = value
+            if prefix.endswith("send_addr") and (value == send_address):
+                fetching_send_key = True
+            if fetching_send_key and prefix.endswith("body_sender"):
+                fetching_send_key = False
+                num_fetched+= 1
+                keys["send_key"] = value
+            if num_fetched == 2:
+                return keys
 
 
 class Mail(threading.Thread):
@@ -496,24 +515,28 @@ class Mail(threading.Thread):
             subject - Subject of Mail. 
             body - Body of Mail. """
 
-    def __init__(self, send_addr, recv_addr, subject, body):
+    def __init__(self, send_addr, recv_addr, subject_receiver, subject_sender, body_receiver, body_sender):
         super(Mail, self).__init__()
         self.__send_addr = send_addr
         self.__recv_addr = recv_addr
-        self.__subject = subject
-        self.__body = body
+        self.__subject_receiver = subject_receiver
+        self.__subject_sender = subject_sender
+        self.__body_receiver = body_receiver
+        self.__body_sender = body_sender
         self.__date_time = datetime.datetime.now()
 
     def run(self):
         self.newMail()
 
     def newMail(self):
-        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject   : {self.__subject}\nBody      : {self.__body}\nDate/Time : {self.__date_time}\nOrigin    :{SERVER_IP}")
+        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject (Recv): {self.__subject_receiver}\nSubject (Send): {self.__subject_sender}\nBody (Recv) : {self.__body_receiver}\nBody (Send) : {self.__body_sender}\nDate/Time : {self.__date_time}\nOrigin    : {SERVER_IP}\n")
         mail_json = {
             "send_addr": self.__send_addr,
             "recv_addr": self.__recv_addr,
-            "subject": self.__subject,
-            "body": self.__body,
+            "subject_receiver": self.__subject_receiver,
+            "subject_sender": self.__subject_sender,
+            "body_receiver": self.__body_receiver,
+            "body_sender": self.__body_sender,
             "datetime": str(self.__date_time),
             "origin_node": SERVER_IP
         }
