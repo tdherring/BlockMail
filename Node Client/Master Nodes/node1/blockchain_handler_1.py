@@ -7,7 +7,6 @@ import datetime
 import time
 import random
 import os
-import math
 import shutil
 import ijson
 import ntplib
@@ -219,7 +218,7 @@ class BroadcastServer():
 # inheritance. A better solution would have been to have a superclass as with Server.
 
 class DiscoveryClient():
-    """ Connects to a DiscoveryServer on antoher node. Distributes node information to other nodes. 
+    """ Connects to a DiscoveryServer on antoher node. Distributes node information to other nodes.
         Instantiated on new connection from another node. \n
         Arguments:
             host - String, contains the node IP to conect to. """
@@ -313,6 +312,7 @@ class Time(threading.Thread):
         Also periodically dispenses a new block. """
 
     block_created = threading.Event()
+    out_of_sync = True
 
     def __init__(self):
         super(Time, self).__init__()
@@ -327,15 +327,17 @@ class Time(threading.Thread):
         response = c.request("ntp2a.mcc.ac.uk", version=3)  # Contact NTP server.
         response.offset
         ntp_time = datetime.datetime.fromtimestamp(response.tx_time, datetime.timezone.utc)  # Convert to datetime object.
-        local_time = datetime.datetime.now()  # Get machine time.
+        local_time = datetime.datetime.now().astimezone(datetime.timezone.utc)  # Get machine time.
         # Compare NTP with local time. If >5s out, reject.
         if (
             ntp_time.year != local_time.year or ntp_time.month != local_time.month or ntp_time.day !=
-            local_time.day or ntp_time.hour != local_time.hour or abs(local_time.second-ntp_time.second) >= 5
+            local_time.day or ntp_time.hour != local_time.hour or abs(local_time.second-ntp_time.second) >= 5  # Modified to account for DST
         ):
             print("[TIME] This machine's time is too inaccurate. Please resynchronise with an NTP server and restart the client.")
             input("\nPress any key to exit...")
             os._exit(0)
+        else:
+            Time.out_of_sync = False
 
     def blockTimer(self):
         Time.block_created.clear()  # Clear the signal.
@@ -354,12 +356,14 @@ class Block():
 
     current_block_name = ""
     already_synced = []
+    ready = False
 
     def __init__(self, sync):
         self.__sync = sync
         self.newBlock()
         self.writePrevBlockToChain()
         self.initBlockchainSync()
+        Block.ready = True
 
     def newBlock(self):
         try:  # Try to get a name for the new block.
@@ -411,8 +415,8 @@ class Block():
                 Block.already_synced.append(node)  # Append to record of already synced nodes
 
 
-class MailServer:
-    """ Listens for incoming mail requests (web page at /mail.html). \n
+class FrontendCommsServer:
+    """ Listens for requests from frontend (websocket). \n
         Arguments: \n
             host - IP of node to connect to.
             port - Port of node to connect to."""
@@ -440,6 +444,14 @@ class MailServer:
             reply = "Email Sent!"
         elif data_json["action"] == "KEY":  # Search for public key when sending mail.
             reply = json.dumps(self.getPublicKeys(data_json["recv_addr"], data_json["send_addr"]))
+        elif data_json["action"] == "STILL_ALIVE":
+            data_to_send = {"version": VERSION,
+                            "known_nodes": KNOWN_NODES}
+            reply = json.dumps(data_to_send)
+        elif data_json["action"] == "NODES_ON_NETWORK":
+            reply = json.dumps({"nodes_on_network": NODES_ON_NETWORK})
+        elif data_json["action"] == "CURRENT_BLOCK":
+            reply = json.dumps({"current_block": Block.current_block_name})
         else:
             print("[MAIL] Invalid data stream received.")
         await websocket.send(reply)  # When received, send message back to client.
@@ -449,31 +461,55 @@ class MailServer:
         fetching_email = False  # Allows for "backtracking".
         current_email = {}
         send_addr = ""
-        for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
-            if prefix.endswith("send_addr"):
-                send_addr = value
-            if (prefix.endswith("send_addr") or prefix.endswith("recv_addr")) and value == address:
-                fetching_email = True
-            if fetching_email:
-                current_email["send_addr"] = send_addr
-                if prefix.endswith("recv_addr"):
+        if address == "*":
+            block = ""
+            for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
+                if (prefix.endswith("block")):
+                    block = value
+                elif prefix.endswith("send_addr"):
+                    current_email["send_addr"] = value
+                elif prefix.endswith("recv_addr"):
                     current_email["recv_addr"] = value
-                elif prefix.endswith("subject_sender") and send_addr == address:  # Requested by sender?
-                    current_email["subject"] = value
-                elif prefix.endswith("subject_receiver") and send_addr != address:  # Requested by receiver?
-                    current_email["subject"] = value
-                elif prefix.endswith("body_sender") and send_addr == address:
-                    current_email["body"] = value
-                elif prefix.endswith("body_receiver") and send_addr != address:
-                    current_email["body"] = value
                 elif prefix.endswith("datetime"):
                     current_email["datetime"] = value
                 elif prefix.endswith("origin_node"):
                     current_email["origin_node"] = value
-                    if not current_email["recv_addr"] == "0x0":  # Don't append the initial key mail.
-                        all_emails.append(current_email)
+                elif prefix.endswith("mail_hash_digest"):
+                    current_email["mail_hash_digest"] = value
+                    current_email["block"] = block
+                    all_emails.append(current_email)
                     current_email = {}
-                    fetching_email = False
+        else:
+            for prefix, val_type, value in ijson.parse(open("blocks/blockchain.chain", "r")):
+                if prefix.endswith("send_addr"):
+                    send_addr = value
+                if (prefix.endswith("send_addr") or prefix.endswith("recv_addr")) and value == address:
+                    fetching_email = True
+                if (prefix.endswith("block")):
+                    block = value
+                if fetching_email:
+                    current_email["block"] = block
+                    current_email["send_addr"] = send_addr
+                    if prefix.endswith("recv_addr"):
+                        current_email["recv_addr"] = value
+                    elif prefix.endswith("subject_sender") and send_addr == address:  # Requested by sender?
+                        current_email["subject"] = value
+                    elif prefix.endswith("subject_receiver") and send_addr != address:  # Requested by receiver?
+                        current_email["subject"] = value
+                    elif prefix.endswith("body_sender") and send_addr == address:
+                        current_email["body"] = value
+                    elif prefix.endswith("body_receiver") and send_addr != address:
+                        current_email["body"] = value
+                    elif prefix.endswith("datetime"):
+                        current_email["datetime"] = value
+                    elif prefix.endswith("origin_node"):
+                        current_email["origin_node"] = value
+                    elif prefix.endswith("hash_digest"):
+                        current_email["hash_digest"] = value
+                        if not current_email["recv_addr"] == "0x0":  # Don't append the initial key mail.
+                            all_emails.append(current_email)
+                        current_email = {}
+                        fetching_email = False
         return {"emails": all_emails[::-1]}
 
     def getPublicKeys(self, recv_address, send_address):
@@ -505,10 +541,12 @@ class Mail(threading.Thread):
         Arguments: \n
             send_addr - Sender address of Mail.
             recv_addr - Recipient address of Mail.
-            subject - Subject of Mail. 
+            subject - Subject of Mail.
             body - Body of Mail. """
 
     def __init__(self, send_addr, recv_addr, subject_receiver, subject_sender, body_receiver, body_sender):
+        while not Block.ready:
+            True  # Wait until ready
         super(Mail, self).__init__()
         self.__send_addr = send_addr
         self.__recv_addr = recv_addr
@@ -522,8 +560,6 @@ class Mail(threading.Thread):
         self.newMail()
 
     def newMail(self):
-        print(f"\nNEW EMAIL CREATED\n\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject (Recv): {self.__subject_receiver}\nSubject (Send): {self.__subject_sender}\n \
-                Body (Recv) : {self.__body_receiver}\nBody (Send) : {self.__body_sender}\nDate/Time : {self.__date_time}\nOrigin    : {SERVER_IP}\n")
         mail_json = {
             "send_addr": self.__send_addr,
             "recv_addr": self.__recv_addr,
@@ -534,6 +570,8 @@ class Mail(threading.Thread):
             "datetime": str(self.__date_time),
             "origin_node": SERVER_IP
         }
+        mail_json = self.generateMailDigest(mail_json)
+        print(f"\nNEW EMAIL CREATED\n\nHash      : {mail_json['mail_hash_digest']}\nSender    : {self.__send_addr}\nRecipient : {self.__recv_addr}\nSubject (Recv): {self.__subject_receiver}\nSubject (Send): {self.__subject_sender}\nBody (Recv) : {self.__body_receiver}\nBody (Send) : {self.__body_sender}\nDate/Time : {self.__date_time}\nOrigin    : {SERVER_IP}\n")
         block_num = Block.current_block_name  # Fetch the current block.
         print(f"[BROADCAST] Adding Email to Current Block ({block_num})...")
         block_read_in = json.load(open(f"blocks/{block_num}.block", "r"))
@@ -546,6 +584,11 @@ class Mail(threading.Thread):
         for node in CONNECTED_KNOWN_NODES:
             broadcast_thread = threading.Thread(target=BroadcastClient, args=(node, mail_json))
             broadcast_thread.start()
+
+    def generateMailDigest(self, mail):
+        mail_hash_digest = sha256(json.dumps(mail).encode("utf-8")).hexdigest()
+        mail["mail_hash_digest"] = mail_hash_digest
+        return mail
 
 
 if __name__ == "__main__":
@@ -567,14 +610,17 @@ if __name__ == "__main__":
         new_blockchain.close()
     time_thread = Time()
     time_thread.start()
+    while time_thread.out_of_sync:
+        True
     for node in MASTER_NODES:
         if node != SERVER_IP:
             discovery_client_thread = threading.Thread(target=DiscoveryClient, args=(node,))
             discovery_client_thread.start()
+            time.sleep(0.1)
     discovery_server_thread = Server("DISCOVERY", DISCOVERY_PORT)
     sync_server_thread = Server("BLOCKCHAIN", SYNC_PORT)
     block_server_thread = Server("BROADCAST", BROADCAST_PORT)
     discovery_server_thread.start()
     sync_server_thread.start()
     block_server_thread.start()
-    MailServer()
+    FrontendCommsServer()

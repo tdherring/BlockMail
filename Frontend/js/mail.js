@@ -1,4 +1,3 @@
-const MASTER_NODES = ["127.0.0.1:41286", "127.0.0.2:41286", "127.0.0.3:41286", "127.0.0.4:41286"];
 const NODE_RSA = require("node-rsa");
 var mobile = false;
 var page_counter = 0;
@@ -61,7 +60,7 @@ $("#clear-private").click(function () {
 $("#decrypt-form").submit(function (e) {
     if ($("#private-key").val() == "") {
         if ($(".alert").length > 0) {
-            $(".alert").html("You must enter or upload a key to decrypt with. ");
+            $(".alert").html("You must enter or upload a key to decrypt with");
         } else {
             $(".modal-body").append(
                 `<div class='alert alert-danger' role='alert'>
@@ -73,13 +72,30 @@ $("#decrypt-form").submit(function (e) {
         console.log($("#private-key").val());
         let key_pair = new NODE_RSA($("#private-key").val());
         for (let x = 0; x < mail_json.length; x++) {
-            let decrypted_subject = key_pair.decrypt(mail_json[x].subject, "utf8");
-            let decrypted_body = key_pair.decrypt(mail_json[x].body, "utf8");
-            mail_json[x].subject = decrypted_subject;
-            mail_json[x].body = decrypted_body;
-            if (x < 5) {
-                $("#email-obj-subject-" + x).html(decrypted_subject);
-                $("#email-obj-body-" + x).html(decrypted_body);
+            try {
+                let decrypted_subject = key_pair.decrypt(mail_json[x].subject, "utf8");
+                let decrypted_body = key_pair.decrypt(mail_json[x].body, "utf8");
+                mail_json[x].subject = decrypted_subject;
+                mail_json[x].body = decrypted_body;
+                if (x < 5) {
+                    $("#email-obj-subject-" + x).html(decrypted_subject);
+                    $("#email-obj-body-" + x).html(decrypted_body);
+                }
+                if ($(".alert-success").length == 0) {
+                    $(".modal-body").append(
+                        `<div class='alert alert-success' role='alert'>
+                        Decryption successful!
+                    </div>`);
+                }
+            } catch {
+                if ($(".alert").length > 0) {
+                    $(".alert").html("Decryption failed. Please try again with the correct key.");
+                } else {
+                    $(".modal-body").append(
+                        `<div class='alert alert-danger' role='alert'>
+                            Decryption failed. Please try again with the correct key.
+                        </div>`);
+                }
             }
         }
     }
@@ -201,6 +217,7 @@ function createSocket(address, request_type, encrypted_mail) {
                 "subject": subject,
                 "body": body,
             }
+            console.log(event.data);
             encrypt(mail, event.data);
         }
         return event.data;
@@ -209,9 +226,8 @@ function createSocket(address, request_type, encrypted_mail) {
 
 function writeMailToDom(mail) {
     mail_json = JSON.parse(mail).emails;
-    console.log(mail_json);
     for (let x = 0; x < 5; x++) {
-        changePage(page_counter, mail_json);
+        getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
     }
     monitorPageChange();
 }
@@ -221,55 +237,91 @@ function monitorPageChange() {
     $("#prev-page").unbind().click(function prevPage() {
         if (page_counter != 0) {
             page_counter -= 1;
-            changePage(page_counter, mail_json);
+            getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
         }
     });
 
     $("#next-page").unbind().click(function nextPage() {
         if ((page_counter + 1) * 5 < mail_json.length) {
             page_counter += 1;
-            changePage(page_counter, mail_json)
+            getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
         }
     });
 }
 
-function changePage(page_counter, mail_json) {
+function changePage(page_counter, mail_json, current_block) {
     let start_index = page_counter * 5;
     let end_index = start_index + 5;
     $("#email-table").empty();
     $("#page-num").html(page_counter + 1);
     for (let x = start_index; x < end_index; x++) {
         try {
-            $("#email-table").append(
-                `<tr>
-                <td>
-                    <a id="email-obj-` + x + `" href="#">
-                        <h4 id="email-obj-subject-` + x + `">` + mail_json[x].subject + `</h4>
-                        <h5>From: ` + mail_json[x].send_addr + `</h5>
-                        <h6 id="email-obj-body-` + x + `">` + mail_json[x].body + `</h6>
-                        <em>` + mail_json[x].datetime + `</em>
-                    </a>
-                </td>
-            </tr> `);
+            let datetime = new Date(mail_json[x].datetime);
+            let formatted_datetime = datetime.toLocaleDateString() + ", " + datetime.toLocaleTimeString();
+            if (mail_json[x].send_addr == getCookie("ecdsa_public")) {
+                $("#email-table").append(
+                    `<tr>
+                        <td>
+                            <a id="email-obj-` + x + `" href="#">
+                                <h4  class='col-12' id="email-obj-subject-` + x + `">` + mail_json[x].subject + `</h4>
+                                <h5 class='col-12'>To:` + mail_json[x].recv_addr + `</h5>
+                                <h6 class='col-12' id="email-obj-body-` + x + `">` + mail_json[x].body + `</h6>
+                                <em class='col-3'>` + formatted_datetime + `, Confirmations:` + (current_block - mail_json[x].block.substring(1)) + `</em>
+                            </a>
+                        </td>
+                    </tr> `);
+            } else {
+                $("#email-table").append(
+                    `<tr>
+                        <td>
+                            <a id="email-obj-` + x + `" href="#">
+                                <h4 class='col-12' id="email-obj-subject-` + x + `">` + mail_json[x].subject + `</h4>
+                                <h5 class='col-12'>From:` + mail_json[x].send_addr + `</h5>
+                                <h6 class='col-12' id="email-obj-body-` + x + `">` + mail_json[x].body + `</h6>
+                                <em class='col-3'>` + formatted_datetime + `, Confirmations:` + (current_block - mail_json[x].block.substring(1)) + `</em>
+                            </a>
+                        </td>
+                    </tr> `);
+            }
         } catch {
             $("#email-table").append(
                 `<tr>
-                <td>
-                </td>
-            </tr> `);
+                    <td>
+                    </td>
+                </tr> `);
         }
     }
     monitorEmailClick();
     monitorBackClick(mail_json);
 }
 
+function getCurrentBlock(page_counter, mail_json, address) {
+    var socket = new WebSocket("ws://" + address);
+    socket.onopen = function () {
+        let get_request = {
+            "action": "CURRENT_BLOCK",
+        };
+        socket.send(JSON.stringify(get_request));
+    };
+    socket.onmessage = function (event) {
+        json = JSON.parse(event.data);
+        changePage(page_counter, mail_json, json.current_block.substring(1));
+    };
+}
+
 function monitorEmailClick() {
     $("[id^=email-obj-]").click(function viewEmail(event) {
         let mail_index = event.currentTarget.id.slice(10);
         let mail_to_show = mail_json[mail_index];
+        let datetime = new Date(mail_to_show.datetime);
+        let formatted_datetime = datetime.toLocaleDateString() + ", " + datetime.toLocaleTimeString();
         $("#mail-view-subject").html(mail_to_show.subject);
-        $("#mail-view-from").html(mail_to_show.send_addr);
-        $("#mail-view-datetime").html(mail_to_show.datetime);
+        if (mail_to_show.send_addr == getCookie("ecdsa_public")) {
+            $("#mail-view-from").html("To:" + mail_to_show.recv_addr);
+        } else {
+            $("#mail-view-from").html("From:" + mail_to_show.send_addr);
+        }
+        $("#mail-view-datetime").html(formatted_datetime);
         $("#mail-view-body").html(mail_to_show.body);
         $("#mail-view").removeClass("hidden");
         if (mobile) {
@@ -296,7 +348,7 @@ function monitorBackClick(mail_json) {
         $("#mail-view").addClass("hidden");
         $("#compose-btn").parent().removeClass("hidden");
         $("#back-btn").parent().addClass("hidden");
-        changePage(page_counter, mail_json);
+        getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
     });
 }
 

@@ -1,18 +1,60 @@
 const EC = require("elliptic").ec;
 const EC_INSTANCE = new EC("secp256k1");
 
-//Handle initial "Authenticate" button press.
+
+
+/* Handle initial "Authenticate" button press. */
 $("#auth-btn").click(function () {
     //Get values of login form fields into variables.
     var ecdsa_public_text = $("#ecdsa-public").val();
     var ecdsa_private_text = $("#ecdsa-private").val();
 
     if (checkECDSAKey(ecdsa_public_text, true) && checkECDSAKey(ecdsa_private_text, false)) {
-        testKeys(ecdsa_public_text, ecdsa_private_text);
+        adressInBlockchain(MASTER_NODES[0]);
     }
 });
 
-//Evaluate inputs of the form and outline in red if incorrect, and display alert at bottom of form.
+/* Checks if the entered wallet address actually exists in the network. */
+function adressInBlockchain(address) {
+    var socket = new WebSocket("ws://" + address);
+    socket.onopen = function () {
+        let key_request = {
+            "action": "KEY",
+            "recv_addr": $("#ecdsa-public").val(),
+            "send_addr": $("#ecdsa-public").val(),
+        };
+        socket.send(JSON.stringify(key_request));
+    }
+    socket.onerror = function () {
+        if ($(".alert").length > 0) {
+            $(".alert").html("Unable to connect to BlockMail network. Please try again.");
+        } else {
+            $(".card-body").append(
+                `<div class='alert alert-danger' role='alert'> 
+                    Unable to connect to BlockMail network. Please try again.
+                </div>`);
+        }
+    };
+    socket.onmessage = function (event) {
+        console.log(event.data)
+        if (event.data != "null") {
+            var ecdsa_public_text = $("#ecdsa-public").val();
+            var ecdsa_private_text = $("#ecdsa-private").val();
+            testKeys(ecdsa_public_text, ecdsa_private_text);
+        } else {
+            if ($(".alert").length > 0) {
+                $(".alert").html("Keys match, but address was not found in the BlockMail network. If you have just created the account, please wait a few minutes and try again. Otherwise, please create a new account.");
+            } else {
+                $(".card-body").append(
+                    `<div class='alert alert-danger' role='alert'> 
+                        Keys match, but address was not found in the BlockMail network. If you have just created the account, please wait a few minutes and try again. Otherwise, please create a new account.
+                    </div>`);
+            }
+        }
+    };
+}
+
+/* Evaluate inputs of the form and outline in red if incorrect, and display alert at bottom of form. */
 function checkECDSAKey(ecdsa_text, is_public) {
     //Set up ID targets.
     id = "#ecdsa-public"; //If Public.
@@ -37,6 +79,7 @@ function checkECDSAKey(ecdsa_text, is_public) {
     return true
 }
 
+/* Compare the keys after checking that the public key is not on the network. */
 function testKeys(public, private) {
     compare_public = EC_INSTANCE.keyFromPrivate(private, "hex").getPublic().encode("hex");
     if (compare_public == public) {
@@ -67,7 +110,7 @@ function testKeys(public, private) {
     return false;
 }
 
-//Wait for file upload. If file uploaded, place into text area, and grey out upload button.
+/* Wait for file upload. If file uploaded, place into text area, and grey out upload button. */
 $("#ecdsa-public-file").change(function () {
     var reader = new FileReader();
     reader.onload = function (event) {

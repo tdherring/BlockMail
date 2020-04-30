@@ -9,6 +9,7 @@
     <meta name="description" content="A blockchain based email system, with a focus on security through transparency of design." />
     <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.css" crossorigin="anonymous" />
     <link href="css/default.css" rel="stylesheet" type="text/css" media="all" />
 </head>
 
@@ -23,14 +24,58 @@
                 <a class="nav-item nav-link" id="index-link" href="index.html">Home</a>
                 <a class="nav-item nav-link" id="login-link" href="login.html">Login</a>
                 <a class="nav-item nav-link" id="create-acc-link" href="create-account.html">Create Account</a>
-                <a class="nav-item nav-link" id="network-overview-link" href="network-overview.html">Network Overview</a>
-                <a class="nav-item nav-link active" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
+                <a class="nav-item nav-link active" id="network-overview-link" href="network-overview.html">Network Overview</a>
+                <a class="nav-item nav-link" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
                 <a class="nav-item nav-link" id="mail-link" href="mail.html">Mail</a>
                 <a class="nav-item nav-link" id="contact-us-link" href="contact-us.html">Contact Us</a>
             </div>
         </div>
     </nav>
-    <div class="wrapper"></div>
+    <div class="wrapper">
+        <div id="loading">
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+            <div class="spinner-grow" role="status"></div>
+            <div class="spinner-grow spinner-grow-alt" role="status"></div>
+        </div>
+        <div class="row hidden" id="overview-table">
+            <div class="col-sm-12 col-md-12 col-lg-10 mx-auto">
+                <nav>
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a class="nav-item nav-link active" href="#nav-nodes" data-toggle="tab" id="nav-nodes-tab" role="tab" aria-controls="nav-nodes" aria-selected="true">Nodes</a>
+                        <a class="nav-item nav-link" href="#nav-emails" data-toggle="tab" id="nav-emails-tab" role="tab" aria-controls="nav-emails" aria-selected="true">Emails</a>
+                    </div>
+                </nav>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="nav-nodes" role="tabpanel" aria-labelledby="nav-nodes-tab">
+                        <table class="table table-striped" id="node-list">
+                            <thead>
+                                <th>Node Address</th>
+                                <th>Status</th>
+                                <th>Version</th>
+                                <th>Neighbours</th>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="nav-emails" role="tabpanel" aria-labelledby="nav-emails-tab">
+                        <table class="table table-striped" id="email-list">
+                            <thead>
+                                <th>Email Hash</th>
+                                <th>Entry Point</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Block</th>
+                                <th>Date / Time</th>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="page-footer font-small pt-4">
         <div class="container-fluid text-center text-md-left">
             <div class="row">
@@ -53,12 +98,18 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.js"></script>
+    <script src="https://kit.fontawesome.com/4e701a347d.js" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+
+
 
     <!-- My JavaScript Import -->
     <script src="js/constants.js"></script>
     <script src="js/getCookie.js"></script>
     <script src="js/checkLoggedIn.js"></script>
-
+    <script src="js/checkNodeStatus.js"></script>
+    <script src="js/getAllMail.js"></script>
 
 </body>
 

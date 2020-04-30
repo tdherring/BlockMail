@@ -25,7 +25,7 @@
                 <a class="nav-item nav-link" id="index-link" href="index.html">Home</a>
                 <a class="nav-item nav-link" id="login-link" href="login.html">Login</a>
                 <a class="nav-item nav-link" id="create-acc-link" href="create-account.html">Create Account</a>
-                <a class="nav-item nav-link" id="about-us-link" href="about-us.html">About Us</a>
+                <a class="nav-item nav-link" id="network-overview-link" href="network-overview.html">Network Overview</a>
                 <a class="nav-item nav-link" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
                 <a class="nav-item nav-link active" id="mail-link" href="mail.html">Mail</a>
                 <a class="nav-item nav-link" id="contact-us-link" href="contact-us.html">Contact Us</a>
@@ -50,7 +50,7 @@
                             <div class="form-label-group">
                                 <label id="private-key-file-label" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase" for="private-key-file">Select private.key File</label>
                                 <input type="file" id="private-key-file" class="hidden" accept=".key"></input>
-                                <input type="button" id="clear-private" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase hidden" onclick="clearFile()" value="Clear"></input>
+                                <input type="button" id="clear-private" class="btn btn-lg btn-dark btn-primary btn-block text-uppercase hidden" value="Clear"></input>
                             </div>
                             <hr />
                             <button id="decrypt-confirm-btn" class="btn btn-lg btn-primary btn-block text-uppercase">Decrypt</button>
@@ -113,6 +113,7 @@
                     </form>
                     <div id="mail-view" class="hidden">
                         <h3 id="mail-view-subject"></h3>
+                        <hr />
                         <h4 id="mail-view-from"></h4>
                         <h5 id="mail-view-datetime"></h5>
                         <hr />
@@ -147,6 +148,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
     <!-- My JavaScript Import -->
+    <script src="js/constants.js"></script>
     <script src="js/modules/node-rsa.js"></script>
     <script src="js/getCookie.js"></script>
     <script src="js/checkLoggedIn.js"></script>

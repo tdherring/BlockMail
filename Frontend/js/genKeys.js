@@ -1,28 +1,38 @@
 const EC = require("elliptic").ec;
 const EC_INSTANCE = new EC("secp256k1");
 const NODE_RSA = require("node-rsa");
-const MASTER_NODES = ["127.0.0.1:41286", "127.0.0.2:41286", "127.0.0.3:41286", "127.0.0.4:41286"];
 
 $("#gen-keys-btn").click(function () {
     $("#keys").empty(); // Clear current key-gen if exists.
-    let ecdsa = genECDSA();
-    let rsa = genRSA();
-    writeToBlockchain(MASTER_NODES[0], rsa["public"], ecdsa["public"]);
+    writeToBlockchain(MASTER_NODES[0]);
 });
 
-function writeToBlockchain(address, rsa_public_key, ecdsa_public_key) {
-    let key_obj = {
-        "action": "SEND",
-        "send_addr": ecdsa_public_key,
-        "recv_addr": "0x0",
-        "subject_sender": "**RSA-PUBLIC**",
-        "subject_receiver": "",
-        "body_sender": rsa_public_key,
-        "body_receiver": ""
-    }
+function writeToBlockchain(address) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
+        let ecdsa = genECDSA();
+        let rsa = genRSA();
+        let key_obj = {
+            "action": "SEND",
+            "send_addr": ecdsa["public"],
+            "recv_addr": "0x0",
+            "subject_sender": "**RSA-PUBLIC**",
+            "subject_receiver": "",
+            "body_sender": rsa["public"],
+            "body_receiver": ""
+        }
         socket.send(JSON.stringify(key_obj));
+    };
+
+    socket.onerror = function () {
+        if ($(".alert").length > 0) {
+            $(".alert").html("Unable to connect to BlockMail network. Please try again.");
+        } else {
+            $(".card-body").append(
+                `<div class='alert alert-danger' role='alert'> 
+                    Unable to connect to BlockMail network. Please try again.
+                </div>`);
+        }
     };
 }
 
