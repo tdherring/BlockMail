@@ -21,7 +21,7 @@ In the Node Client(https://github.com/tdherring/BlockMail/tree/master/Node%20Cli
 
 Each contains a number of pre-configured nodes that can be launched in order to simulate a working BlockMail environment. There are a number of requirements:
 
-*You must run the Master Nodes first.
-*You must run at least 2 Master Nodes.
+* You must run the Master Nodes first.
+* You must run at least 2 Master Nodes.
 
 You can view the status of the network on the "Network Overview" page of the frontend.
