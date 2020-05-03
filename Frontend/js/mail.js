@@ -73,10 +73,10 @@ $("#decrypt-form").submit(function (e) {
         let key_pair = new NODE_RSA($("#private-key").val());
         for (let x = 0; x < mail_json.length; x++) {
             try {
-                let decrypted_subject = key_pair.decrypt(mail_json[x].subject, "utf8");
-                let decrypted_body = key_pair.decrypt(mail_json[x].body, "utf8");
-                mail_json[x].subject = decrypted_subject;
-                mail_json[x].body = decrypted_body;
+                let decrypted_subject = key_pair.decrypt(mail_json[x]["subject"], "utf8");
+                let decrypted_body = key_pair.decrypt(mail_json[x]["body"], "utf8");
+                mail_json[x]["subject"] = decrypted_subject;
+                mail_json[x]["body"] = decrypted_body;
                 if (x < 5) {
                     $("#email-obj-subject-" + x).html(decrypted_subject);
                     $("#email-obj-body-" + x).html(decrypted_body);
@@ -153,9 +153,7 @@ $(window).resize(function checkSize() {
     Arguments:
         mail - The JSON mail object containing the body and subject to be encrypted using the recipient's public key.
 */
-function encrypt(mail, keys) {
-    let keys_json = JSON.parse(keys);
-    console.log(keys_json)
+function encrypt(mail, keys_json) {
     let recipient_public_key = new NODE_RSA(keys_json["recv_key"]);
     let sender_public_key = new NODE_RSA(keys_json["send_key"]);
     mail["subject_receiver"] = recipient_public_key.encrypt(mail["subject"], "base64");
@@ -182,7 +180,6 @@ function createSocket(address, request_type, encrypted_mail) {
                 "action": "GET",
                 "wallet_public": wallet_public,
             };
-
             socket.send(JSON.stringify(get_request));
         } else if (request_type == "KEY") {
             let key_request = {
@@ -199,7 +196,9 @@ function createSocket(address, request_type, encrypted_mail) {
     };
     socket.onmessage = function (event) {
         if (request_type == "SEND") {
-            //do something
+            $("#mail-modal-title").html("Mail Sent!");
+            $("#mail-modal-body").html("Your email has been sent! It should appear in the recipients mailbox at the next Block interval.");
+            $("#mail-modal").modal();
         } else if (request_type == "GET") {
             $("#loading").addClass("hidden");
             $("#mail-wrapper").removeClass("hidden");
@@ -217,8 +216,14 @@ function createSocket(address, request_type, encrypted_mail) {
                 "subject": subject,
                 "body": body,
             }
-            console.log(event.data);
-            encrypt(mail, event.data);
+            let data = JSON.parse(event.data);
+            if (data["recv_key"] === undefined) {
+                $("#mail-modal-title").html("Address Not Found");
+                $("#mail-modal-body").html("The address specified was not found in the BlockMail network. It may be of the wrong format. Please check your input and try again.");
+                $("#mail-modal").modal();
+            } else {
+                encrypt(mail, data);
+            }
         }
         return event.data;
     };
@@ -256,7 +261,7 @@ function changePage(page_counter, mail_json, current_block) {
     $("#page-num").html(page_counter + 1);
     for (let x = start_index; x < end_index; x++) {
         try {
-            let datetime = new Date(mail_json[x].datetime);
+            let datetime = new Date(mail_json[x]["datetime"]);
             let formatted_datetime = datetime.toLocaleDateString() + ", " + datetime.toLocaleTimeString();
             if (mail_json[x].send_addr == getCookie("ecdsa_public")) {
                 $("#email-table").append(
@@ -313,16 +318,16 @@ function monitorEmailClick() {
     $("[id^=email-obj-]").click(function viewEmail(event) {
         let mail_index = event.currentTarget.id.slice(10);
         let mail_to_show = mail_json[mail_index];
-        let datetime = new Date(mail_to_show.datetime);
+        let datetime = new Date(mail_to_show["datetime"]);
         let formatted_datetime = datetime.toLocaleDateString() + ", " + datetime.toLocaleTimeString();
         $("#mail-view-subject").html(mail_to_show.subject);
         if (mail_to_show.send_addr == getCookie("ecdsa_public")) {
-            $("#mail-view-from").html("To:" + mail_to_show.recv_addr);
+            $("#mail-view-from").html("To:" + mail_to_show["recv_addr"]);
         } else {
-            $("#mail-view-from").html("From:" + mail_to_show.send_addr);
+            $("#mail-view-from").html("From:" + mail_to_show["send_addr"]);
         }
         $("#mail-view-datetime").html(formatted_datetime);
-        $("#mail-view-body").html(mail_to_show.body);
+        $("#mail-view-body").html(mail_to_show["body"]);
         $("#mail-view").removeClass("hidden");
         if (mobile) {
             $("#email-outer-col").addClass("hidden");
