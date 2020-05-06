@@ -15,7 +15,7 @@ function createMailSocket(address) {
     socket.onmessage = function (event) {
         $("#loading").addClass("hidden");
         $("#overview-table").removeClass("hidden");
-        populateEmailList(JSON.parse(event.data).emails);
+        populateEmailList(JSON.parse(event.data)["emails"]);
     };
 }
 

@@ -1,5 +1,6 @@
 $(function setup() {
     createNodeSocket(MASTER_NODES[0], "NODES_ON_NETWORK", null);
+    createNodeSocket(MASTER_NODES[0], "CURRENT_BLOCK", null);
     $("#node-list").DataTable();
 });
 
@@ -9,24 +10,16 @@ function createNodeSocket(address, request_type, table_id) {
         address = address + " [MASTER " + table_id + "]";
     }
     socket.onopen = function () {
-        if (request_type == "NODES_ON_NETWORK") {
-            let node_request = {
-                "action": "NODES_ON_NETWORK"
-            }
-            socket.send(JSON.stringify(node_request));
-        } else {
-            let alive_request = {
-                "action": "STILL_ALIVE"
-            }
-            socket.send(JSON.stringify(alive_request));
+        let node_request = {
+            "action": request_type
         }
+        socket.send(JSON.stringify(node_request));
     };
     socket.onerror = function () {
         if (request_type == "NODES_ON_NETWORK") {
             $(".wrapper").html("<h4>Unable to Connect to the BlockMail network. <a href='network-overview.html'>Try again?</a></h4>")
             $("#loading").addClass("hidden");
         } else {
-
             $("#node-li-" + table_id).removeClass("hidden");
             $('#node-list').DataTable().row.add([address, "<i class='fas fa-times-circle'>&zwnj;</i>", "-", "-"]).draw();
         }
@@ -36,6 +29,8 @@ function createNodeSocket(address, request_type, table_id) {
         $("#overview-table").removeClass("hidden");
         if (request_type == "NODES_ON_NETWORK") {
             populateNodeList(JSON.parse(event.data).nodes_on_network);
+        } else if (request_type == "CURRENT_BLOCK") {
+            $("#current-block").html($("#current-block").html() + JSON.parse(event.data)["current_block"]);
         } else {
             let data = JSON.parse(event.data)
             $("#node-li-" + table_id).removeClass("hidden");

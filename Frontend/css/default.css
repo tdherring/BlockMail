@@ -406,3 +406,20 @@ textarea {
 #nav-emails-tab, #nav-nodes-tab {
 	color: black;
 }
+
+#current-block {
+	background-color: #343a40 !important;
+	color: white;
+	margin-bottom: 4px;
+	pointer-events: none;
+}
+
+/* BECOME A NODE */
+
+ol {
+	list-style-position: inside;
+}
+
+#download-client-btn:hover{
+    text-decoration: none;
+}

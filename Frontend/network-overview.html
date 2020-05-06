@@ -27,7 +27,7 @@
                 <a class="nav-item nav-link active" id="network-overview-link" href="network-overview.html">Network Overview</a>
                 <a class="nav-item nav-link" id="become-a-node-link" href="become-a-node.html">Become a Node</a>
                 <a class="nav-item nav-link" id="mail-link" href="mail.html">Mail</a>
-                <a class="nav-item nav-link" id="contact-us-link" href="contact-us.html">Contact Us</a>
+
             </div>
         </div>
     </nav>
@@ -42,12 +42,11 @@
         </div>
         <div class="row hidden" id="overview-table">
             <div class="col-sm-12 col-md-12 col-lg-10 mx-auto">
-                <nav>
-                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                        <a class="nav-item nav-link active" href="#nav-nodes" data-toggle="tab" id="nav-nodes-tab" role="tab" aria-controls="nav-nodes" aria-selected="true">Nodes</a>
-                        <a class="nav-item nav-link" href="#nav-emails" data-toggle="tab" id="nav-emails-tab" role="tab" aria-controls="nav-emails" aria-selected="true">Emails</a>
-                    </div>
-                </nav>
+                <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                    <a class="nav-item nav-link active" href="#nav-nodes" data-toggle="tab" id="nav-nodes-tab" role="tab" aria-controls="nav-nodes" aria-selected="true">Nodes</a>
+                    <a class="nav-item nav-link" href="#nav-emails" data-toggle="tab" id="nav-emails-tab" role="tab" aria-controls="nav-emails" aria-selected="true">Emails</a>
+                    <button class="btn btn-md text-uppercase" id="current-block">Current Block: </button>
+                </div>
                 <div class="tab-content" id="nav-tabContent">
                     <div class="tab-pane fade show active" id="nav-nodes" role="tabpanel" aria-labelledby="nav-nodes-tab">
                         <table class="table table-striped" id="node-list">
