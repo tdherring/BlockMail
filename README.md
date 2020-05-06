@@ -38,5 +38,7 @@ You can view the status of the network on the "Network Overview" page of the fro
 2. Search for "Date and Time Settings".
 3. Click on "Sync now", and relaunch the node client.
 
-### 
+### On the website, I see "Unable to Connect to the BlockMail network. Try again?"
 
+* Ensure that the nodes are running. 
+* If the nodes are already running, and you have changed the IP address of the master nodes, ensure that this is reflected in [Frontend](https://github.com/tdherring/BlockMail/tree/development/Frontend)/[js](https://github.com/tdherring/BlockMail/tree/development/Frontend/js)/[constants.js](https://github.com/tdherring/BlockMail/blob/development/Frontend/js/constants.js).
