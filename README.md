@@ -42,3 +42,12 @@ You can view the status of the network on the "Network Overview" page of the fro
 
 * Ensure that the nodes are running. 
 * If the nodes are already running, and you have changed the IP address of the master nodes, ensure that this is reflected in [Frontend](https://github.com/tdherring/BlockMail/tree/development/Frontend)/[js](https://github.com/tdherring/BlockMail/tree/development/Frontend/js)/[constants.js](https://github.com/tdherring/BlockMail/blob/development/Frontend/js/constants.js).
+
+### My Node client hangs sometimes
+
+* If running multiple nodes on the same computer, the processor may become locked up in dealing with other nodes as a result of the highly threaded nature of the BlockMail client. To resolve the issue simply press any key to "wake" the thread.
+* When running one node (as in an actual deployment) this issue has not shown yet and should not cause problems.
+
+### Other issues
+
+* If a critical error occurs, the easiest solution would be to reset the blockchain on each of the nodes. This can be done by removing the "blocks" and "temp" folders in each instances directory.
