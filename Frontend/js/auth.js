@@ -3,7 +3,9 @@ const EC_INSTANCE = new EC("secp256k1");
 
 
 
-/* Handle initial "Authenticate" button press. */
+/**
+ *  Handle initial "Authenticate" button press. 
+ */
 $("#auth-btn").click(function () {
     //Get values of login form fields into variables.
     var ecdsa_public_text = $("#ecdsa-public").val();
@@ -16,7 +18,10 @@ $("#auth-btn").click(function () {
     }
 });
 
-/* Checks if the entered wallet address actually exists in the network. */
+/**
+ * Checks if the entered wallet address actually exists in the network. 
+ * @param {*} address The address of the BlockMail node to connect to.
+ */
 function adressInBlockchain(address) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
@@ -38,7 +43,6 @@ function adressInBlockchain(address) {
         }
     };
     socket.onmessage = function (event) {
-        console.log(event.data)
         if (event.data != "null") {
             var ecdsa_public_text = $("#ecdsa-public").val();
             var ecdsa_private_text = $("#ecdsa-private").val();
@@ -56,7 +60,11 @@ function adressInBlockchain(address) {
     };
 }
 
-/* Evaluate inputs of the form and outline in red if incorrect, and display alert at bottom of form. */
+/**
+ * Evaluate inputs of the form and outline in red if incorrect, and display alert at bottom of form. 
+ * @param {*} ecdsa_text The textual form of the ECDSA public/private key.
+ * @param {*} is_public A boolean value.
+ */
 function checkECDSAKey(ecdsa_text, is_public) {
     //Set up ID targets.
     id = "#ecdsa-public"; //If Public.
@@ -81,11 +89,14 @@ function checkECDSAKey(ecdsa_text, is_public) {
     return true
 }
 
-/* Compare the keys after checking that the public key is not on the network. */
+/**
+ * Compare the keys after checking that the public key is not on the network.
+ * @param {*} public The ECDSA public key.
+ * @param {*} private The ECDSA private key
+ */
 function testKeys(public, private) {
     compare_public = EC_INSTANCE.keyFromPrivate(private, "hex").getPublic().encode("hex");
     if (compare_public == public) {
-        console.log("Authentication Successful!");
         var date = new Date();
         date.setTime(date.getTime() + 3600000); //An hour from now.
         document.cookie = "ecdsa_public=" + public + ";expires=" + date.toUTCString() + "; path=/";
@@ -100,7 +111,6 @@ function testKeys(public, private) {
         }, 2000);
         return true;
     }
-    console.log("Authentication Failed!");
     if ($(".alert").length > 0) {
         $(".alert").html("Authentication failed. Please try again.");
     } else {
@@ -112,7 +122,9 @@ function testKeys(public, private) {
     return false;
 }
 
-/* Wait for file upload. If file uploaded, place into text area, and grey out upload button. */
+/** 
+ * Wait for file upload. If file uploaded, place into text area, and grey out upload button. 
+ */
 $("#ecdsa-public-file").change(function () {
     var reader = new FileReader();
     reader.onload = function (event) {
@@ -124,6 +136,9 @@ $("#ecdsa-public-file").change(function () {
     $("#clear-public").removeClass("hidden");
 });
 
+/** 
+ * Same as above but for private key file.
+ */
 $("#ecdsa-private-file").change(function () {
     var reader = new FileReader();
     reader.onload = function (event) {
@@ -135,6 +150,10 @@ $("#ecdsa-private-file").change(function () {
     $("#clear-private").removeClass("hidden");
 });
 
+/**
+ * Clears the public/private key text inputs.
+ * @param {*} is_public A boolean value.
+ */
 function clearFile(is_public) {
     $(is_public ? "#clear-public" : "#clear-private").addClass("hidden");
     $(is_public ? "#ecdsa-public" : "#ecdsa-private").val("");

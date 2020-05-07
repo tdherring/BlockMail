@@ -1,3 +1,7 @@
+/**
+ * Fetches and returns a cookie.
+ * @param {*} cname The name of the cookie to get.
+ */
 function getCookie(cname) {
     var name = cname + "=";
     var decodedCookie = decodeURIComponent(document.cookie);

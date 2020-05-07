@@ -2,13 +2,20 @@ const EC = require("elliptic").ec;
 const EC_INSTANCE = new EC("secp256k1");
 const NODE_RSA = require("node-rsa");
 
-$("#gen-keys-btn").click(async function () {
+/**
+ * Listen for press press of "Generate Keys" button.
+ */
+$("#gen-keys-btn").click(function () {
     $("#keys").empty(); // Clear current key-gen if exists.
     selectInNode().then(function (result) {
         writeToBlockchain(result)
     });
 });
 
+/**
+ * Writes an email to the BlockMail blockchain by contacting a node.
+ * @param {*} address The address of the BlockMail node to connect to.
+ */
 function writeToBlockchain(address) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
@@ -38,7 +45,9 @@ function writeToBlockchain(address) {
     };
 }
 
-
+/**
+ * Generates an ECDSA key pair.
+ */
 function genECDSA() {
     let ecdsa_key_pair = EC_INSTANCE.genKeyPair(); // Generate ECDSA SECP256K1 key pair.
     let ecdsa_public_key = ecdsa_key_pair.getPublic("hex"); //Extract public key.
@@ -60,6 +69,9 @@ function genECDSA() {
     }
 }
 
+/**
+ * Generates an RSA key pair.
+ */
 function genRSA() {
     let rsa_key = new NODE_RSA({ // Generate RSA key pair with 2048 bit key.
         b: 2048
@@ -78,7 +90,11 @@ function genRSA() {
     };
 }
 
-
+/**
+ * Creates and downloads a document (a little HTML "hack").
+ * @param {*} data The contents of the generated file.
+ * @param {*} name The name of the generated file.
+ */
 function downloadFile(data, name) {
     let a = document.createElement('a');
     a.href = "data:application/octet-stream," + encodeURIComponent(data);

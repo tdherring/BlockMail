@@ -1,3 +1,7 @@
+/**
+ * Called on DOM load. Gets all nodes on the network and checks the current block.
+ * Also converts node-list to a DataTable.
+ */
 $(function setup() {
     selectInNode().then(function (result) {
         createNodeSocket(result, "NODES_ON_NETWORK", null);
@@ -6,6 +10,12 @@ $(function setup() {
     $("#node-list").DataTable();
 });
 
+/**
+ * Creates a socket with the given request type to a BlockMail node.
+ * @param {*} address The address of the BlockMail node to connect to.
+ * @param {*} request_type The type of the request (NODES_ON_NETWORK, CURRENT_BLOCK, STILL_ALIVE).
+ * @param {*} table_id null on initial call. Contains the index of the node for referencing the HTML element.
+ */
 function createNodeSocket(address, request_type, table_id) {
     var socket = new WebSocket("ws://" + address);
     if (MASTER_NODES.includes(address)) {
@@ -45,6 +55,10 @@ function createNodeSocket(address, request_type, table_id) {
     };
 }
 
+/**
+ * Contact all nodes on the network and check that they are still alive.
+ * @param {*} nodes A JSON of all nodes on the network.
+ */
 function populateNodeList(nodes) {
     for (x = 0; x < nodes.length; x++) {
         createNodeSocket(nodes[x] + ":41286", "STILL_ALIVE", x);

@@ -1,9 +1,10 @@
 const NODE_RSA = require("node-rsa");
 var mobile = false;
 var page_counter = 0;
-var in_node = null;
 
-/* Retrieve mail on load of DOM. */
+/** 
+ * Retrieve mail on load of DOM. 
+ * */
 $(setTimeout(function setup() {
     $(window).delay(1000);
     if (getCookie("ecdsa_public") == "") {
@@ -17,12 +18,17 @@ $(setTimeout(function setup() {
     }
 }, 1000));
 
-/* Listen for new send mail object. Package mail, and pass to encrypt() method for processing. */
+/**
+ *  Listen for new send mail object. Package mail, and pass to encrypt() method for processing. #
+ * */
 $("#send-email-form").submit(function (e) {
     e.preventDefault(); // Prevent reload.
     createSocket(in_node, "KEY", null)
 });
 
+/**
+ * Listen for press of "compose" button.
+ */
 $("#compose-btn").click(function () {
     $("#mail-placeholder").addClass("hidden");
     $("#send-email-form").removeClass("hidden");
@@ -38,10 +44,16 @@ $("#compose-btn").click(function () {
     }
 });
 
+/**
+ * Listen for press of "decrypt" button.
+ */
 $("#decrypt-btn").click(function () {
     $("#decrypt-modal").modal();
 });
 
+/**
+ * Listen for change of the private key input field in the decryption dialog.
+ */
 $("#private-key-file").change(function () {
     var reader = new FileReader();
     reader.onload = function (event) {
@@ -53,6 +65,9 @@ $("#private-key-file").change(function () {
     $("#clear-private").removeClass("hidden");
 });
 
+/**
+ * Listen for press of the "clear" button in the decryption dialog.
+ */
 $("#clear-private").click(function () {
     $("#private-key").val("");
     $("#private-key-file").val("");
@@ -61,6 +76,9 @@ $("#clear-private").click(function () {
     $("#clear-private").addClass("hidden");
 });
 
+/**
+ * Wait for submission of the decryption form.
+ */
 $("#decrypt-form").submit(function (e) {
     if ($("#private-key").val() == "") {
         if ($(".alert").length > 0) {
@@ -73,7 +91,6 @@ $("#decrypt-form").submit(function (e) {
         }
     } else {
         e.preventDefault(); // Prevent reload.
-        console.log($("#private-key").val());
         let key_pair = new NODE_RSA($("#private-key").val());
         for (let x = 0; x < mail_json.length; x++) {
             try {
@@ -105,7 +122,9 @@ $("#decrypt-form").submit(function (e) {
     }
 });
 
-/* Listen for resize event. Adjust elements to display correctly. */
+/**
+ * Listen for resize event. Adjust elements to display correctly. 
+ * */
 $(window).resize(function checkSize() {
     if ($(document).width() < 1555) {
         mobile = true;
@@ -153,10 +172,11 @@ $(window).resize(function checkSize() {
     }
 });
 
-/* Establish a WebSocket connection to the given address.
-    Arguments:
-        mail - The JSON mail object containing the body and subject to be encrypted using the recipient's public key.
-*/
+/**
+ * Establish a WebSocket connection to the given address.
+ * @param {*} mail The JSON mail object to be encrypted.
+ * @param {*} keys_json The JSON of the sender and recipient public key.
+ */
 function encrypt(mail, keys_json) {
     let recipient_public_key = new NODE_RSA(keys_json["recv_key"]);
     let sender_public_key = new NODE_RSA(keys_json["send_key"]);
@@ -167,12 +187,12 @@ function encrypt(mail, keys_json) {
     createSocket(in_node, "SEND", mail) // Will randomize later.
 }
 
-/* Establish a WebSocket connection to the given address.
-   Arguments:
-       address - The node address to send the mail to. This is the entry point to the BlockMail network.
-       request_type - GET, SEND, KEY. Identifies what the purpose of the socket is.
-       encrypted_mail - Contains the mail object, including encrypted body / subject. If null, request is GET mail. 
-*/
+/**
+ * Establish a WebSocket connection to the given address.
+ * @param {*} address The node address to send the mail to. This is the entry point to the BlockMail network.
+ * @param {*} request_type GET, SEND, KEY. Identifies what the purpose of the socket is.
+ * @param {*} encrypted_mail Contains the mail object, including encrypted body / subject. If null, request is GET mail. 
+ */
 function createSocket(address, request_type, encrypted_mail) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
@@ -233,6 +253,10 @@ function createSocket(address, request_type, encrypted_mail) {
     };
 }
 
+/**
+ * Puts the emails on the page.
+ * @param {*} mail The JSON object containing all emails.
+ */
 function writeMailToDom(mail) {
     mail_json = JSON.parse(mail).emails;
     for (let x = 0; x < 5; x++) {
@@ -241,7 +265,9 @@ function writeMailToDom(mail) {
     monitorPageChange();
 }
 
-
+/**
+ * Wait for user to click "next" or "prev" and adjust view accordingly.
+ */
 function monitorPageChange() {
     $("#prev-page").unbind().click(function prevPage() {
         if (page_counter != 0) {
@@ -258,6 +284,12 @@ function monitorPageChange() {
     });
 }
 
+/**
+ * Rewrites the DOM with the correct objects.
+ * @param {*} page_counter The current page index.
+ * @param {*} mail_json A JSON object of all mail.
+ * @param {*} current_block The name of the current block.
+ */
 function changePage(page_counter, mail_json, current_block) {
     let start_index = page_counter * 5;
     let end_index = start_index + 5;
@@ -304,6 +336,12 @@ function changePage(page_counter, mail_json, current_block) {
     monitorBackClick(mail_json);
 }
 
+/**
+ * Requests the current block form a node.
+ * @param {*} page_counter The current page index.
+ * @param {*} mail_json A JSON object of all mail.
+ * @param {*} address The node address.
+ */
 function getCurrentBlock(page_counter, mail_json, address) {
     var socket = new WebSocket("ws://" + address);
     socket.onopen = function () {
@@ -318,6 +356,9 @@ function getCurrentBlock(page_counter, mail_json, address) {
     };
 }
 
+/**
+ * Wait for user to click email and display on screen.
+ */
 function monitorEmailClick() {
     $("[id^=email-obj-]").click(function viewEmail(event) {
         let mail_index = event.currentTarget.id.slice(10);
@@ -347,6 +388,9 @@ function monitorEmailClick() {
     });
 }
 
+/**
+ * Wait for press of "back" button.
+ */
 function monitorBackClick(mail_json) {
     $("#back-btn").click(function () {
         $("#decrypt-btn").parent().removeClass("hidden");
