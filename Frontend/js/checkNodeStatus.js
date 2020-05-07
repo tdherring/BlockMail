@@ -1,6 +1,8 @@
 $(function setup() {
-    createNodeSocket(MASTER_NODES[0], "NODES_ON_NETWORK", null);
-    createNodeSocket(MASTER_NODES[0], "CURRENT_BLOCK", null);
+    selectInNode().then(function (result) {
+        createNodeSocket(result, "NODES_ON_NETWORK", null);
+        createNodeSocket(result, "CURRENT_BLOCK", null);
+    });
     $("#node-list").DataTable();
 });
 

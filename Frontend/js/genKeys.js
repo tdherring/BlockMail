@@ -2,9 +2,11 @@ const EC = require("elliptic").ec;
 const EC_INSTANCE = new EC("secp256k1");
 const NODE_RSA = require("node-rsa");
 
-$("#gen-keys-btn").click(function () {
+$("#gen-keys-btn").click(async function () {
     $("#keys").empty(); // Clear current key-gen if exists.
-    writeToBlockchain(MASTER_NODES[0]);
+    selectInNode().then(function (result) {
+        writeToBlockchain(result)
+    });
 });
 
 function writeToBlockchain(address) {

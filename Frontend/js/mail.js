@@ -1,6 +1,7 @@
 const NODE_RSA = require("node-rsa");
 var mobile = false;
 var page_counter = 0;
+var in_node = null;
 
 /* Retrieve mail on load of DOM. */
 $(setTimeout(function setup() {
@@ -8,7 +9,10 @@ $(setTimeout(function setup() {
     if (getCookie("ecdsa_public") == "") {
         window.location = "login.html";
     } else {
-        createSocket(MASTER_NODES[0], "GET", null);
+        selectInNode().then(function (result) {
+            in_node = result;
+            createSocket(in_node, "GET", null);
+        });
         $(window).resize();
     }
 }, 1000));
@@ -16,7 +20,7 @@ $(setTimeout(function setup() {
 /* Listen for new send mail object. Package mail, and pass to encrypt() method for processing. */
 $("#send-email-form").submit(function (e) {
     e.preventDefault(); // Prevent reload.
-    createSocket(MASTER_NODES[0], "KEY", null)
+    createSocket(in_node, "KEY", null)
 });
 
 $("#compose-btn").click(function () {
@@ -160,7 +164,7 @@ function encrypt(mail, keys_json) {
     mail["subject_sender"] = sender_public_key.encrypt(mail["subject"], "base64");
     mail["body_receiver"] = recipient_public_key.encrypt(mail["body"], "base64");
     mail["body_sender"] = sender_public_key.encrypt(mail["body"], "base64");
-    createSocket(MASTER_NODES[0], "SEND", mail) // Will randomize later.
+    createSocket(in_node, "SEND", mail) // Will randomize later.
 }
 
 /* Establish a WebSocket connection to the given address.
@@ -232,7 +236,7 @@ function createSocket(address, request_type, encrypted_mail) {
 function writeMailToDom(mail) {
     mail_json = JSON.parse(mail).emails;
     for (let x = 0; x < 5; x++) {
-        getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
+        getCurrentBlock(page_counter, mail_json, in_node)
     }
     monitorPageChange();
 }
@@ -242,14 +246,14 @@ function monitorPageChange() {
     $("#prev-page").unbind().click(function prevPage() {
         if (page_counter != 0) {
             page_counter -= 1;
-            getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
+            getCurrentBlock(page_counter, mail_json, in_node)
         }
     });
 
     $("#next-page").unbind().click(function nextPage() {
         if ((page_counter + 1) * 5 < mail_json.length) {
             page_counter += 1;
-            getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
+            getCurrentBlock(page_counter, mail_json, in_node)
         }
     });
 }
@@ -353,12 +357,6 @@ function monitorBackClick(mail_json) {
         $("#mail-view").addClass("hidden");
         $("#compose-btn").parent().removeClass("hidden");
         $("#back-btn").parent().addClass("hidden");
-        getCurrentBlock(page_counter, mail_json, MASTER_NODES[0])
+        getCurrentBlock(page_counter, mail_json, in_node)
     });
-}
-
-/* Select a node at Random as an entry point to the network. */
-function pickEntryPoint() {
-    let random = Math.floor(Math.random() * Math.floor(MASTER_NODES.length));
-    return MASTER_NODES[random];
 }

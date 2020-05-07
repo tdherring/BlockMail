@@ -10,7 +10,9 @@ $("#auth-btn").click(function () {
     var ecdsa_private_text = $("#ecdsa-private").val();
 
     if (checkECDSAKey(ecdsa_public_text, true) && checkECDSAKey(ecdsa_private_text, false)) {
-        adressInBlockchain(MASTER_NODES[0]);
+        selectInNode().then(function (result) {
+            adressInBlockchain(result);
+        });
     }
 });
 

@@ -1,5 +1,7 @@
 $(function setup() {
-    createMailSocket(MASTER_NODES[0], "NODES_ON_NETWORK", null);
+    selectInNode().then(function (result) {
+        createMailSocket(result, "NODES_ON_NETWORK", null);
+    });
     $("#email-list").DataTable();
 });
 
