@@ -1,4 +1,4 @@
-# BlockMail
+# BlockMail - A blockchain-based Email System
 
 ## Running the Frontend of BlockMail
 
@@ -17,9 +17,11 @@ If you run into any problems at all when following these instructions, please co
 
 ## Testing the BlockMail Network (Backend) Locally
 
+*Note:* The suggested setup when testing locally is 2 Master Nodes and 2 Normal Nodes. Anything more than this may slow down your system substantially. With this in mind, please follow the instructions below:
+
 In the [Node Client](https://github.com/tdherring/BlockMail/tree/master/Node%20Client) folder you will find a couple of other folders named [Master Nodes](https://github.com/tdherring/BlockMail/tree/master/Node%20Client/Master%20Nodes) and [Nodes](https://github.com/tdherring/BlockMail/tree/master/Node%20Client/Nodes). 
 
-Each contains a number of pre-configured nodes that can be launched in order to simulate a working BlockMail environment. There are a number of requirements:
+Each contains a number of pre-configured nodes that can be launched to simulate a working BlockMail environment. There are several requirements:
 
 * You must run the Master Nodes first.
 * You must run at least 2 Master Nodes.
@@ -27,7 +29,7 @@ Each contains a number of pre-configured nodes that can be launched in order to 
 * If you wish to test across multiple PCs, you'll need to ensure that the "server_ip" attribute in config.json is set to your external IP address, and that ports 41285-41288 are open on your local PC firewall and/or network firewall. 
   * If you change the IP of the master nodes, you will have to reflect this by modifying the "master_nodes" attribute in config.json in all other nodes.
   * You will also have to change the MASTER_NODES constant in [Frontend](https://github.com/tdherring/BlockMail/tree/development/Frontend)/[js](https://github.com/tdherring/BlockMail/tree/development/Frontend/js)/[constants.js](https://github.com/tdherring/BlockMail/blob/development/Frontend/js/constants.js)
-
+  
 You can view the status of the network on the "Network Overview" page of the frontend.
 
 ## Troubleshooting
