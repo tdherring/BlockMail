@@ -22,7 +22,7 @@ In the [Node Client](https://github.com/tdherring/BlockMail/tree/master/Node%20C
 Each contains a number of pre-configured nodes that can be launched to simulate a working BlockMail environment. There are several requirements:
 
 * You must run the Master Nodes first.
-* You must run at least 2 Master Nodes.
+* You must run at least 1 Master Nodes.
 * You must run the nodes on a Windows PC.
 * If you wish to test across multiple PCs, you'll need to ensure that the "server_ip" attribute in config.json is set to your external IP address, and that ports 41285-41288 are open on your local PC firewall and/or network firewall. 
   * If you change the IP of the master nodes, you will have to reflect this by modifying the "master_nodes" attribute in config.json in all other nodes.
