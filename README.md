@@ -13,8 +13,6 @@ In order to test the frontend of BlockMail, you will need to use software which 
 
 You should now be able to use the BlockMail frontend as intended!
 
-If you run into any problems at all when following these instructions, please contact me at t.d.herring@se17.qmul.ac.uk and I will get back to you as soon as possible to assist.
-
 ## Testing the BlockMail Network (Backend) Locally
 
 *Note:* The suggested setup when testing locally is 2 Master Nodes and 2 Normal Nodes. Anything more than this may slow down your system substantially. With this in mind, please follow the instructions below:
@@ -53,3 +51,7 @@ You can view the status of the network on the "Network Overview" page of the fro
 ### Other issues
 
 * If a critical error occurs, the easiest solution would be to reset the blockchain on each of the nodes. This can be done by removing the "blocks" and "temp" folders in each instances directory.
+
+## Getting in Contact
+
+* If you run into any problems at all when following these instructions, please contact me at t.d.herring@se17.qmul.ac.uk and I will get back to you as soon as possible to assist.
