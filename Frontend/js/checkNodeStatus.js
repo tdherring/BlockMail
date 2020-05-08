@@ -19,7 +19,7 @@ $(function setup() {
 function createNodeSocket(address, request_type, table_id) {
     var socket = new WebSocket("ws://" + address);
     if (MASTER_NODES.includes(address)) {
-        address = address + " [MASTER " + table_id + "]";
+        address = "[MASTER " + (table_id + 1) + "] " + address;
     }
     socket.onopen = function () {
         let node_request = {
@@ -63,4 +63,5 @@ function populateNodeList(nodes) {
     for (x = 0; x < nodes.length; x++) {
         createNodeSocket(nodes[x] + ":41286", "STILL_ALIVE", x);
     }
+    $("#node-list").DataTable().order([0, "desc"]).draw();
 }
