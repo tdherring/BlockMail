@@ -80,9 +80,10 @@ $("#clear-private").click(function () {
  * Wait for submission of the decryption form.
  */
 $("#decrypt-form").submit(function (e) {
+    e.preventDefault(); // Prevent reload.
     if ($("#private-key").val() == "") {
         if ($(".alert").length > 0) {
-            $(".alert").html("You must enter or upload a key to decrypt with");
+            $(".alert").html("You must enter or upload a key to decrypt with.");
         } else {
             $(".modal-body").append(
                 `<div class='alert alert-danger' role='alert'>
@@ -90,7 +91,6 @@ $("#decrypt-form").submit(function (e) {
                 </div>`);
         }
     } else {
-        e.preventDefault(); // Prevent reload.
         let key_pair = new NODE_RSA($("#private-key").val());
         for (let x = 0; x < mail_json.length; x++) {
             try {
@@ -307,7 +307,7 @@ function changePage(page_counter, mail_json, current_block) {
                                 <h4  class='col-12' id="email-obj-subject-` + x + `">` + mail_json[x].subject + `</h4>
                                 <h5 class='col-12'>To:` + mail_json[x].recv_addr + `</h5>
                                 <h6 class='col-12' id="email-obj-body-` + x + `">` + mail_json[x].body + `</h6>
-                                <em class='col-3'>` + formatted_datetime + `, Confirmations:` + (current_block - mail_json[x].block.substring(1)) + `</em>
+                                <em class='col-3'>` + formatted_datetime + `, ` + (current_block - mail_json[x].block.substring(1)) + ` Confirmations</em>
                             </a>
                         </td>
                     </tr> `);
@@ -319,7 +319,7 @@ function changePage(page_counter, mail_json, current_block) {
                                 <h4 class='col-12' id="email-obj-subject-` + x + `">` + mail_json[x].subject + `</h4>
                                 <h5 class='col-12'>From:` + mail_json[x].send_addr + `</h5>
                                 <h6 class='col-12' id="email-obj-body-` + x + `">` + mail_json[x].body + `</h6>
-                                <em class='col-3'>` + formatted_datetime + `, Confirmations:` + (current_block - mail_json[x].block.substring(1)) + `</em>
+                                <em class='col-3'>` + formatted_datetime + `, ` + (current_block - mail_json[x].block.substring(1)) + ` Confirmations</em>
                             </a>
                         </td>
                     </tr> `);
